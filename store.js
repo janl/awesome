@@ -5,6 +5,7 @@
 
   MIT License
 */
+var sys = require("sys");
 
 var stores = [];
 var current = 0;
@@ -34,18 +35,36 @@ exports.del = function(key) {
     delete stores[current][key];
   }
   return deleted;
-}
+};
 
 exports.dump = function() {
   return JSON.stringify(stores);
-}
+};
 
 exports.get = function(key) {
+  debug("getting: '" +key+ "'")
   return stores[current][key] || false;
 };
 
 exports.has = function(key) {
   return !!stores[current][key];
+};
+
+exports.incr = function(key) {
+  if(typeof stores[current][key] == "undefined") {
+    exports.set(key, 0);
+  }
+  stores[current][key] = parseInt(stores[current][key]) + 1;
+  return stores[current][key];
+};
+
+exports.decr = function(key) {
+  if(typeof stores[current][key] == "undefined") {
+    exports.set(key, 0);
+  }
+  stores[current][key] = parseInt(stores[current][key]) - 1;
+
+  return stores[current][key];
 };
 
 exports.keys = function(pattern) {
@@ -66,14 +85,14 @@ exports.mget = function(keys) {
   return keys.map(function(key) {
     return exports.get(key);
   });
-}
+};
 
 exports.select = function(index) {
   current = index;
   if(!stores[current]) {
     stores[current] = {};
   }
-}
+};
 
 exports.set = function(key, value) {
   stores[current][key] = value;
@@ -102,5 +121,9 @@ function is_array(a) {
   return (a &&
     typeof a === 'object' &&
     a.constructor === Array);
+}
+
+function debug(s) {
+  sys.print(s + "\r\n");
 }
 

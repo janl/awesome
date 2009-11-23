@@ -101,7 +101,7 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           if(store.has(key)) {
             var value = store.get(key);
-            reply("$" + value.length);
+            reply("$" + value.toString().length);
             reply(value);
           } else { // not found
             reply("$-1");
@@ -121,6 +121,24 @@ var server = tcp.createServer(function(socket) {
           } else { // not found
             reply("-1");
           }
+        }
+      },
+
+      incr: {
+        inline: true,
+        callback: function() {
+          var key = that.args[1];
+          var value = store.incr(key);
+          reply(":" + value);
+        }
+      },
+
+      decr: {
+        inline: true,
+        callback: function() {
+          var key = that.args[1];
+          var value = store.decr(key);
+          reply(":" + value);
         }
       },
 
