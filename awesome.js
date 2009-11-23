@@ -1,5 +1,5 @@
 /*
-  amazing is a redis clone for node.js
+  Awesome is a redis clone for node.js
 
   Initial code by Jan Lehnardt <jan@apache.org>
 
