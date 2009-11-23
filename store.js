@@ -67,6 +67,23 @@ exports.decr = function(key) {
   return stores[current][key];
 };
 
+exports.incrby = function(key, increment) {
+  if(typeof stores[current][key] == "undefined") {
+    exports.set(key, 0);
+  }
+  stores[current][key] = parseInt(stores[current][key]) + parseInt(increment);
+  return stores[current][key];
+};
+
+exports.decrby = function(key, decrement) {
+  if(typeof stores[current][key] == "undefined") {
+    exports.set(key, 0);
+  }
+  stores[current][key] = parseInt(stores[current][key]) - parseInt(decrement);
+
+  return stores[current][key];
+};
+
 exports.keys = function(pattern) {
   var store = stores[current];
   var result = [];

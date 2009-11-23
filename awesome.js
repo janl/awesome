@@ -142,6 +142,26 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      incrby: {
+        inline: true,
+        callback: function() {
+          var key = that.args[1];
+          var increment = that.args[2];
+          var value = store.incrby(key, increment);
+          reply(":" + value);
+        }
+      },
+
+      decrby: {
+        inline: true,
+        callback: function() {
+          var key = that.args[1];
+          var decrement = that.args[2];
+          var value = store.incrby(key, decrement);
+          reply(":" + value);
+        }
+      },
+
       info: {
         inline: true,
         callback: function() {
