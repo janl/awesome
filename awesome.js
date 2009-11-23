@@ -60,6 +60,16 @@ var server = tcp.createServer(function(socket) {
     var that = this;
 
     var callbacks = {
+      // keep sorted alphabetically
+      dbsize: {
+        inline: true,
+        callback: function() {
+          debug("received DBSIZE command");
+          var size = store.dbsize();
+          socket.send(":" + size + eol);
+        }
+      },
+
       get: {
         inline: true,
         callback: function() {
@@ -78,7 +88,7 @@ var server = tcp.createServer(function(socket) {
       getset: {
         inline: false,
         callback: function() {
-          debug("received GETSET comand");
+          debug("received GETSET command");
           var key = that.args[1];
           if(store.has(key)) {
             var value = store.get(key);
@@ -93,16 +103,19 @@ var server = tcp.createServer(function(socket) {
       info: {
         inline: true,
         callback: function() {
+          debug("received INFO command");
           socket.send("a5e, the awesome node.js redis clone");
         }
       },
 
-      dbsize: {
+      keys: {
         inline: true,
         callback: function() {
-          debug("received DBSIZE command");
-          var size = store.dbsize();
-          socket.send(":" + size + eol);
+          debug("received keys command");
+          var pattern = that.args[1];
+          var result = store.keys(pattern);
+          socket.send("$" + result.length + eol);
+          socket.send(result + eol);
         }
       },
 
@@ -165,7 +178,6 @@ var server = tcp.createServer(function(socket) {
       } else {
         // ignoring unknown command
       }
-      debug("out exec");
     };
     
     return this;
@@ -185,15 +197,20 @@ var server = tcp.createServer(function(socket) {
     return buffer.substr(buffer.lastIndexOf(eol) + 2)
   }
 
+  function parseData(s) {
+    return s.substring(s.indexOf(eol) + 2, s.lastIndexOf(eol));
+  }
+
   var buffer = "";
   var in_bulk_request = false;
   var cmd = {};
   socket.addListener("receive", function(packet) {
     buffer += packet;
-    debug(buffer);
+    debug("read: '" + buffer + "'");
     var idx;
     if(idx = buffer.indexOf(eol) != -1) { // we have a newline
       if(in_bulk_request) {
+        debug("in bulk req");
         // later
         cmd.setData(buffer);
         in_bulk_request = false;
@@ -201,13 +218,22 @@ var server = tcp.createServer(function(socket) {
         cmd.exec();
       } else {
         // not a bulk request yet
+        debug("not in bulk req yet");
         cmd = Command(buffer);
-        buffer = adjustBuffer(buffer);
         if(cmd.is_inline()) {
           cmd.exec();
         } else {
-          in_bulk_request = true;
+          if(buffer.indexOf(eol) != buffer.lastIndexOf(eol)) { // two new lines
+            // parse out command line
+            cmd.setData(parseData(buffer));
+            in_bulk_request = false;
+            cmd.exec();
+          } else {
+            debug("wait for bulk: '" + buffer + "'");
+            in_bulk_request = true;
+          }
         }
+        buffer = adjustBuffer(buffer);
       }
     }
   });
