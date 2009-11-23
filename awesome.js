@@ -54,6 +54,10 @@ var server = tcp.createServer(function(socket) {
       return args;
     }
 
+    function reply(line) {
+      socket.send(line + eol);
+    }
+
     this.cmd = parseCommand(line).toLowerCase();
     this.args = parseArgs(line);
 
@@ -66,7 +70,7 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received DBSIZE command");
           var size = store.dbsize();
-          socket.send(":" + size + eol);
+          reply(":" + size);
         }
       },
 
@@ -77,14 +81,14 @@ var server = tcp.createServer(function(socket) {
           if(that.args.length > 2) {
             var keys = that.args.slice(1);
             var deleted = store.del(keys);
-            socket.send(":" + deleted + eol);
+            reply(":" + deleted);
           } else {
             var key = that.args[1];
             if(store.has(key)) {
               store.del(key);
-              socket.send(":1" + eol);
+              reply(":1");
             } else {
-              socket.send(":0" + eol);
+              reply(":0");
             }
           }
         }
@@ -97,10 +101,10 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           if(store.has(key)) {
             var value = store.get(key);
-            socket.send("$" + value.length + eol);
-            socket.send(value + eol);
+            reply("$" + value.length);
+            reply(value);
           } else { // not found
-            socket.send("$-1" + eol);
+            reply("$-1");
           }
         }
       },
@@ -112,10 +116,10 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           if(store.has(key)) {
             var value = store.get(key);
-            socket.send("$" + value.length + eol);
-            socket.send(value + eol);
+            reply("$" + value.length);
+            reply(value);
           } else { // not found
-            socket.send("-1" + eol);
+            reply("-1");
           }
         }
       },
@@ -124,7 +128,7 @@ var server = tcp.createServer(function(socket) {
         inline: true,
         callback: function() {
           debug("received INFO command");
-          socket.send("a5e, the awesome node.js redis clone");
+          reply("a5e, the awesome node.js redis clone");
         }
       },
 
@@ -134,8 +138,8 @@ var server = tcp.createServer(function(socket) {
           debug("received KEYS command");
           var pattern = that.args[1];
           var result = store.keys(pattern);
-          socket.send("$" + result.length + eol);
-          socket.send(result + eol);
+          reply("$" + result.length);
+          reply(result);
         }
       },
 
@@ -145,13 +149,13 @@ var server = tcp.createServer(function(socket) {
           debug("received MGET command");
           var keys = that.args.slice(1);
           var values = store.mget(keys);
-          socket.send("*" + values.length + eol);
+          reply("*" + values.length);
           values.forEach(function(value) {
             if(value) {
-              socket.send("$" + value.length + eol);
-              socket.send(value + eol);
+              reply("$" + value.length);
+              reply(value);
             } else {
-              socket.send("$-1" + eol);
+              reply("$-1");
             }
           });
         }
