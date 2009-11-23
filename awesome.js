@@ -204,7 +204,6 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received QUIT command");
           socket.close();
-          server.close();
         }
       },
 
