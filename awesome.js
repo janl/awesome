@@ -101,8 +101,14 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           if(store.has(key)) {
             var value = store.get(key);
-            reply("$" + value.toString().length);
-            reply(value);
+            if (value.constructor == Object) {
+              // empty value
+              reply("$0");
+              reply("");
+            } else {
+              reply("$" + value.toString().length);
+              reply(value);
+            }
           } else { // not found
             reply("$-1");
           }
@@ -235,7 +241,8 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received SET command");
           var key = that.args[1];
-          store.set(key, that.data);
+          var value = that.data || {};
+          store.set(key, value);
           socket.send(ok);
         }
       },
