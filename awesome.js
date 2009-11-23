@@ -20,7 +20,6 @@ var server = tcp.createServer(function(socket) {
   // requests and responses have this as a trailer
   var eol = "\r\n";
   var ok = "+OK" + eol;
-  // our storage object. All data goes here
 
   function Command(line) {
 
