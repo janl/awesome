@@ -157,7 +157,7 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           var key = that.args[1];
           var decrement = that.args[2];
-          var value = store.incrby(key, decrement);
+          var value = store.decrby(key, decrement);
           reply(":" + value);
         }
       },
