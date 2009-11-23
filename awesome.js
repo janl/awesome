@@ -57,7 +57,7 @@ var server = tcp.createServer(function(socket) {
     this.cmd = parseCommand(line).toLowerCase();
     this.args = parseArgs(line);
 
-    that = this;
+    var that = this;
 
     var callbacks = {
       get: {
