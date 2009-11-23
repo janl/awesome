@@ -12,7 +12,7 @@ var tcp = require("tcp");
 var sys = require("sys");
 
 
-var debug = true;
+var enable_debug = true;
 
 var store = require("./store");
 
@@ -74,12 +74,18 @@ var server = tcp.createServer(function(socket) {
         inline: true,
         callback:function() {
           debug("received DEL command");
-          var key = that.args[1];
-          if(store.has(key)) {
-            store.del(key);
-            socket.send(":1" + eol);
+          if(that.args.length > 2) {
+            var keys = that.args.slice(1);
+            var deleted = store.del(keys);
+            socket.send(":" + deleted + eol);
           } else {
-            socket.send(":0" + eol);
+            var key = that.args[1];
+            if(store.has(key)) {
+              store.del(key);
+              socket.send(":1" + eol);
+            } else {
+              socket.send(":0" + eol);
+            }
           }
         }
       },
@@ -125,11 +131,29 @@ var server = tcp.createServer(function(socket) {
       keys: {
         inline: true,
         callback: function() {
-          debug("received keys command");
+          debug("received KEYS command");
           var pattern = that.args[1];
           var result = store.keys(pattern);
           socket.send("$" + result.length + eol);
           socket.send(result + eol);
+        }
+      },
+
+      mget: {
+        inline: true,
+        callback: function() {
+          debug("received MGET command");
+          var keys = that.args.slice(1);
+          var values = store.mget(keys);
+          socket.send("*" + values.length + eol);
+          values.forEach(function(value) {
+            if(value) {
+              socket.send("$" + value.length + eol);
+              socket.send(value + eol);
+            } else {
+              socket.send("$-1" + eol);
+            }
+          });
         }
       },
 
@@ -200,7 +224,7 @@ var server = tcp.createServer(function(socket) {
   socket.setEncoding("utf8"); // check with redis protocol
 
   function debug(s) {
-    if(debug) {
+    if(enable_debug) {
       sys.print(s + eol);
     }
   }
@@ -220,7 +244,7 @@ var server = tcp.createServer(function(socket) {
   var cmd = {};
   socket.addListener("receive", function(packet) {
     buffer += packet;
-    debug("read: '" + buffer + "'");
+    debug("read: '" + buffer.substr(0, 36) + "'");
     var idx;
     if(idx = buffer.indexOf(eol) != -1) { // we have a newline
       if(in_bulk_request) {

@@ -22,7 +22,18 @@ exports.dbsize = function() {
 };
 
 exports.del = function(key) {
-  delete stores[current][key];
+  var deleted = 0;
+  if(is_array(key)) {
+    key.forEach(function(k) {
+      if(exports.has(k)) {
+        deleted++;
+      }
+      delete stores[current][k];
+    });
+  } else {
+    delete stores[current][key];
+  }
+  return deleted;
 }
 
 exports.dump = function() {
@@ -50,6 +61,13 @@ exports.keys = function(pattern) {
   return result.join(" ");
 };
 
+exports.mget = function(keys) {
+  var values = [];
+  return keys.map(function(key) {
+    return exports.get(key);
+  });
+}
+
 exports.select = function(index) {
   current = index;
   if(!stores[current]) {
@@ -68,4 +86,21 @@ function keymatch(key, pattern) {
   if(pattern == "*") {
     return true;
   }
+
+  if(pattern.substr(-1) == "*") {
+    var prefix = pattern.substr(0, pattern.length - 1);
+    return key.substr(0, prefix.length) == prefix;
+  }
 }
+
+/*
+  Thanks Doug Crockford
+  JavaScript — The Good Parts lists an alternative that works better with
+  frames. Frames can suck it, we use the simple version.
+*/
+function is_array(a) {
+  return (a &&
+    typeof a === 'object' &&
+    a.constructor === Array);
+}
+
