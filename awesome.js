@@ -174,7 +174,7 @@ var server = tcp.createServer(function(socket) {
         inline: true,
         callback: function() {
           debug("received KEYS command");
-          var pattern = that.args[1];
+          var pattern = that.args[1] || '*';
           var result = store.keys(pattern);
           reply("$" + result.length);
           reply(result);
