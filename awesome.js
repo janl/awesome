@@ -162,6 +162,19 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      exists: {
+        inline: true,
+        callback: function() {
+          debug("received EXISTS command");
+          var key = that.args[1];
+          if(store.has(key)) {
+            reply(":1");
+          } else {
+            reply(":0");
+          }
+        }
+      },
+
       info: {
         inline: true,
         callback: function() {
