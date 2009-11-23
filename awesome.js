@@ -70,6 +70,20 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      del: {
+        inline: true,
+        callback:function() {
+          debug("received DEL command");
+          var key = that.args[1];
+          if(store.has(key)) {
+            store.del(key);
+            socket.send(":1" + eol);
+          } else {
+            socket.send(":0" + eol);
+          }
+        }
+      },
+
       get: {
         inline: true,
         callback: function() {

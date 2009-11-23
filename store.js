@@ -21,6 +21,10 @@ exports.dbsize = function() {
   return size;
 };
 
+exports.del = function(key) {
+  delete stores[current][key];
+}
+
 exports.dump = function() {
   return JSON.stringify(stores);
 }
