@@ -3,7 +3,10 @@
 ## WORK IN PROGRESS
 
 At this point, Awesome has all the plumbing in place to implement all of Redis'
-commands. It comes with a bunch of commands to show you how to add your own.
+commands. It comes with a bunch of commands to show you how to add your own. But it
+does not yet implement all that is needed to be a grown up Redis. I hope you can
+pitch in and add your favourite Redis commands :)
+
 
 ## What?
 
@@ -29,8 +32,18 @@ On another terminal
     foo
     QUIT
 
+Yay!
 
-## Licenase
+
+## Run Tests
+
+We're lazy, just run the Redis test suite:
+
+    $ cd ../redis
+    $ make test
+    ...will hang somwhere since Awesome doesn't support all commands yet.
+
+## License
 
 MIT License. See LICENSE file.
 
@@ -38,3 +51,6 @@ MIT License. See LICENSE file.
 ## Who?
 
 Initial code by Jan Lehnardt <jan@apache.org>.
+
+Special thanks to Ryan Dahl (ry) for node.js and Salvatore Sanfilippo (antirez)
+Redis.
