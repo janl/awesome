@@ -53,4 +53,4 @@ MIT License. See LICENSE file.
 Initial code by Jan Lehnardt <jan@apache.org>.
 
 Special thanks to Ryan Dahl (ry) for node.js and Salvatore Sanfilippo (antirez)
-Redis.
+for Redis.
