@@ -6,6 +6,8 @@
   MIT License
 */
 
+var PORT = 6379;
+
 var tcp = require("tcp");
 var sys = require("sys");
 
@@ -23,8 +25,6 @@ var server = tcp.createServer(function(socket) {
   function Command(line) {
 
     function parseCommand(s) {
-      debug("in parseCommand");
-      debug("'" + s + "'");
       var cmd = "";
       for(var idx = 0; idx < s.length; ++idx) {
         var chr = s[idx];
@@ -38,13 +38,16 @@ var server = tcp.createServer(function(socket) {
 
     function parseArgs(s) {
       var args = [];
-      var arg;
+      var arg = "";
       var argidx = 0;
       for(var idx = 0; idx < s.length; ++idx) {
         var chr = s[idx];
         if(chr == " " || chr == "\r" || chr == "\n") {
-          args.push(arg);
-          argidx = argidx + 1;
+          if(arg) {
+            args.push(arg);
+            argidx = argidx + 1;
+            arg = "";
+          }
         } else {
           arg += chr;
         }
@@ -55,7 +58,6 @@ var server = tcp.createServer(function(socket) {
     this.cmd = parseCommand(line).toLowerCase();
     this.args = parseArgs(line);
 
-    debug("got command '" + this.cmd + "'");
     that = this;
 
     var callbacks = {
@@ -195,14 +197,14 @@ var server = tcp.createServer(function(socket) {
       if(in_bulk_request) {
         // later
         cmd.setData(buffer);
-        cmd.exec();
         in_bulk_request = false;
         buffer = adjustBuffer(buffer);
+        cmd.exec();
       } else {
         // not a bulk request yet
         cmd = Command(buffer);
         buffer = adjustBuffer(buffer);
-        if(cmd.is_inline) {
+        if(cmd.is_inline()) {
           cmd.exec();
         } else {
           in_bulk_request = true;
@@ -216,4 +218,4 @@ var server = tcp.createServer(function(socket) {
   });
 });
 
-server.listen(6379, "localhost");
+server.listen(PORT, "localhost");
