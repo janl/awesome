@@ -57,7 +57,13 @@ var server = tcp.createServer(function(socket) {
     }
 
     function reply(line) {
+      debug('reply: ' + line); 
       socket.send(line + eol);
+    }
+    
+    function replyString(s) {
+      reply("$" + s.length);
+      reply(s);
     }
 
     this.cmd = parseCommand(line).toLowerCase();
@@ -273,6 +279,30 @@ var server = tcp.createServer(function(socket) {
       },
       
       // list related functions
+      lindex : {
+        inline: true,
+        callback: function() {
+          debug("received LINDEX command");
+          var key = that.args[1];
+          var index = that.args[2];
+          debug('index = ' +index);
+          
+          if (index && store.has(key)) {
+            var arr = store.get(key);
+            if (index < 0) {
+              index += arr.length;
+            }
+            if (index < 0 || index > arr.length) {
+              replyString('');
+            } else {
+              replyString(arr[index]);
+            }
+          } else {
+            // FEHLER
+            socket.send('-index not a number'+eol);
+          }
+        }
+      },
       llen : {
         inline: true,
         callback: function() {
@@ -293,12 +323,10 @@ var server = tcp.createServer(function(socket) {
           var value = that.data || EMPTY_VALUE;
           if(!store.has(key)) {
             store.set(key, [value]);
-            reply(ok);
           } else {
             store.get(key).unshift(value);
-            reply(ok);
           }
-          reply(ok);
+          socket.send(ok);
         }
       },
       lpop : {
@@ -324,7 +352,7 @@ var server = tcp.createServer(function(socket) {
           } else {
             store.get(key).push(value);
           }
-          reply(ok);
+          socket.send(ok);
         }
       },
       rpop : {
@@ -356,7 +384,6 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           socket.send('-unknown function'+eol);
         }
-
       },  
       
     };
@@ -379,7 +406,6 @@ var server = tcp.createServer(function(socket) {
         callbacks[this.cmd].callback(this.args);
       } else {
         // ignoring unknown command
-        //reply("-unknown command");
       }
     };
     
