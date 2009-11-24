@@ -15,6 +15,7 @@ var sys = require("sys");
 var enable_debug = true;
 
 var store = require("./store");
+var underscore = require("./underscore");
 
 var server = tcp.createServer(function(socket) {
   // requests and responses have this as a trailer
@@ -67,6 +68,7 @@ var server = tcp.createServer(function(socket) {
 
     var callbacks = {
       // keep sorted alphabetically
+      // list-related functions at the end
       dbsize: {
         inline: true,
         callback: function() {
@@ -271,6 +273,72 @@ var server = tcp.createServer(function(socket) {
         }
       },
       
+      // list related functions
+      llen : {
+        inline: true,
+        callback: function() {
+          debug("received LLEN command");
+          if(store.has(key)) {
+            reply(":" + store.get(key).length);
+          } else {
+            // FEHLER
+          }
+        }
+      },
+      lpush : {
+        inline: false,
+        callback: function() {
+          debug("received LPUSH command");
+          var key = that.args[1];
+          var value = that.data || EMPTY_VALUE;
+          if(!store.has(key)) {
+            store.set(key, [value]);
+            reply(ok);
+          } else {
+            store.get(key).unshift(value);
+            reply(ok);
+          }
+          reply(ok);
+        }
+      },
+      lpop : {
+        inline: true,
+        callback: function() {
+          debug("received LPOP command");
+          if(store.has(key)) {
+            reply(store.get(key).shift());
+          } else {
+            // FEHLER
+          }
+        }
+      },
+      rpush : {
+        inline: false,
+        callback: function() {
+          debug("received RPUSH command");
+          var key = that.args[1];
+          var value = that.data || EMPTY_VALUE;
+          if(!store.has(key)) {
+            store.set(key, [value]);
+          } else {
+            store.get(key).push(value);
+          }
+          reply(ok);
+        }
+      },
+      rpop : {
+        inline: false,
+        callback: function() {
+          debug("received RPOP command");
+          if(store.has(key)) {
+            reply(store.get(key).pop());
+          } else {
+            // FEHLER
+          }
+          
+        }
+      },
+      
       // for debugging
       dump: {
         inline: true,
@@ -280,6 +348,7 @@ var server = tcp.createServer(function(socket) {
           socket.send(ok);
         }
       },
+      
     };
 
     this.is_inline = function() {
@@ -300,6 +369,7 @@ var server = tcp.createServer(function(socket) {
         callbacks[this.cmd].callback(this.args);
       } else {
         // ignoring unknown command
+        //reply("-unknown command");
       }
     };
     
@@ -310,7 +380,7 @@ var server = tcp.createServer(function(socket) {
 
   function debug(s) {
     if(enable_debug) {
-      sys.print(s + eol);
+      sys.print(s.substr(0,40) + eol);
     }
   }
 
@@ -353,7 +423,7 @@ var server = tcp.createServer(function(socket) {
             in_bulk_request = false;
             cmd.exec();
           } else {
-            //debug("wait for bulk: '" + buffer + "'");
+            debug("wait for bulk: '" + buffer + "'");
             in_bulk_request = true;
           }
         }
