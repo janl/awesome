@@ -317,11 +317,12 @@ var server = tcp.createServer(function(socket) {
   // for reading requests
 
   function adjustBuffer(buffer) {
-    return buffer.substr(buffer.lastIndexOf(eol) + 2)
+    return buffer.substr(buffer.indexOf(eol) + 2)
   }
 
   function parseData(s) {
-    return s.substring(s.indexOf(eol) + 2, s.lastIndexOf(eol));
+    var start = s.indexOf(eol) + 2;
+    return s.substring(start, s.indexOf(eol, start));
   }
 
   var buffer = "";
@@ -331,7 +332,7 @@ var server = tcp.createServer(function(socket) {
     buffer += packet;
     debug("read: '" + buffer.substr(0, 36) + "'");
     var idx;
-    if(idx = buffer.indexOf(eol) != -1) { // we have a newline
+    while (idx = buffer.indexOf(eol) != -1) { // we have a newline
       if(in_bulk_request) {
         debug("in bulk req");
         // later
@@ -352,13 +353,16 @@ var server = tcp.createServer(function(socket) {
             in_bulk_request = false;
             cmd.exec();
           } else {
-            debug("wait for bulk: '" + buffer + "'");
+            //debug("wait for bulk: '" + buffer + "'");
             in_bulk_request = true;
           }
         }
         buffer = adjustBuffer(buffer);
       }
-    }
+    }  
+    
+    // debug('buffer:' + buffer);
+    
   });
 
   socket.addListener("eof", function() {
