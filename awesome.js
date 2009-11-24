@@ -15,7 +15,6 @@ var sys = require("sys");
 var enable_debug = true;
 
 var store = require("./store");
-var underscore = require("./underscore");
 
 var server = tcp.createServer(function(socket) {
   // requests and responses have this as a trailer
@@ -278,6 +277,7 @@ var server = tcp.createServer(function(socket) {
         inline: true,
         callback: function() {
           debug("received LLEN command");
+          var key = that.args[1];
           if(store.has(key)) {
             reply(":" + store.get(key).length);
           } else {
@@ -305,6 +305,7 @@ var server = tcp.createServer(function(socket) {
         inline: true,
         callback: function() {
           debug("received LPOP command");
+          var key = that.args[1];
           if(store.has(key)) {
             reply(store.get(key).shift());
           } else {
@@ -330,6 +331,7 @@ var server = tcp.createServer(function(socket) {
         inline: false,
         callback: function() {
           debug("received RPOP command");
+          var key = that.args[1];
           if(store.has(key)) {
             reply(store.get(key).pop());
           } else {
@@ -348,6 +350,14 @@ var server = tcp.createServer(function(socket) {
           socket.send(ok);
         }
       },
+      
+      foobaredcommand: {
+        inline: true,
+        callback: function() {
+          socket.send('-unknown function'+eol);
+        }
+
+      },  
       
     };
 
