@@ -240,7 +240,21 @@ var server = tcp.createServer(function(socket) {
           socket.send(ok);
         }
       },
-
+      
+      setnx: {
+        inline: false,
+        callback: function() {
+          debug("received SETNX command");
+          var key = that.args[1];
+          if(!store.has(key)){
+              store.set(key, that.data);
+              reply(":1");
+          }else{
+              reply(":0");
+          }
+        }
+      },
+      
       // for debugging
       dump: {
         inline: true,
