@@ -20,6 +20,8 @@ var server = tcp.createServer(function(socket) {
   // requests and responses have this as a trailer
   var eol = "\r\n";
   var ok = "+OK" + eol;
+  
+  var EMPTY_VALUE = {};
 
   function Command(line) {
 
@@ -101,7 +103,7 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           if(store.has(key)) {
             var value = store.get(key);
-            if (value.constructor == Object) {
+            if (EMPTY_VALUE === value) {
               // empty value
               reply("$0");
               reply("");
@@ -241,7 +243,7 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received SET command");
           var key = that.args[1];
-          var value = that.data || {};
+          var value = that.data || EMPTY_VALUE;
           store.set(key, value);
           socket.send(ok);
         }
