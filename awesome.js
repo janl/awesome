@@ -220,6 +220,14 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      ping: {
+        inline: true,
+        callback: function() {
+          debug("received PING");
+          reply("+PONG");
+        }
+      },
+
       quit: {
         inline: true,
         callback: function() {
