@@ -290,7 +290,7 @@ var server = tcp.createServer(function(socket) {
           if (index && store.has(key)) {
             var arr = store.get(key);
             if (index < 0) {
-              index += arr.length;
+              index = arr.length + parseInt(index);
             }
             if (index < 0 || index > arr.length) {
               replyString('');
