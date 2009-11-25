@@ -20,6 +20,8 @@ var server = tcp.createServer(function(socket) {
   // requests and responses have this as a trailer
   var eol = "\r\n";
   var ok = "+OK" + eol;
+  
+  var EMPTY_VALUE = {};
 
   function Command(line) {
 
@@ -55,7 +57,13 @@ var server = tcp.createServer(function(socket) {
     }
 
     function reply(line) {
+      debug('reply: ' + line); 
       socket.send(line + eol);
+    }
+    
+    function replyString(s) {
+      reply("$" + s.length);
+      reply(s);
     }
 
     this.cmd = parseCommand(line).toLowerCase();
@@ -65,6 +73,7 @@ var server = tcp.createServer(function(socket) {
 
     var callbacks = {
       // keep sorted alphabetically
+      // list-related functions at the end
       dbsize: {
         inline: true,
         callback: function() {
@@ -101,8 +110,14 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           if(store.has(key)) {
             var value = store.get(key);
-            reply("$" + value.toString().length);
-            reply(value);
+            if (EMPTY_VALUE === value) {
+              // empty value
+              reply("$0");
+              reply("");
+            } else {
+              reply("$" + value.toString().length);
+              reply(value);
+            }
           } else { // not found
             reply("$-1");
           }
@@ -167,10 +182,10 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received EXISTS command");
           var key = that.args[1];
-          if(store.has(key)){
-              reply(":1");  
-          }else{
-              reply(":0");
+          if(store.has(key)) {
+            reply(":1");
+          } else {
+            reply(":0");
           }
         }
       },
@@ -187,7 +202,7 @@ var server = tcp.createServer(function(socket) {
         inline: true,
         callback: function() {
           debug("received KEYS command");
-          var pattern = that.args[1];
+          var pattern = that.args[1] || '*';
           var result = store.keys(pattern);
           reply("$" + result.length);
           reply(result);
@@ -212,12 +227,19 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      ping: {
+        inline: true,
+        callback: function() {
+          debug("received PING");
+          reply("+PONG");
+        }
+      },
+
       quit: {
         inline: true,
         callback: function() {
           debug("received QUIT command");
           socket.close();
-          server.close();
         }
       },
 
@@ -236,22 +258,114 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received SET command");
           var key = that.args[1];
-          store.set(key, that.data);
+          var value = that.data || EMPTY_VALUE;
+          store.set(key, value);
           socket.send(ok);
         }
       },
-      
+
       setnx: {
         inline: false,
         callback: function() {
           debug("received SETNX command");
           var key = that.args[1];
-          if(!store.has(key)){
-              store.set(key, that.data);
-              reply(":1");
-          }else{
-              reply(":0");
+          if(!store.has(key)) {
+            store.set(key, that.data);
+            reply(":1");
+          } else {
+            reply(":0");
           }
+        }
+      },
+      
+      // list related functions
+      lindex : {
+        inline: true,
+        callback: function() {
+          debug("received LINDEX command");
+          var key = that.args[1];
+          var index = that.args[2];
+          debug('index = ' +index);
+          
+          if (index && store.has(key)) {
+            var arr = store.get(key);
+            if (index < 0) {
+              index += arr.length;
+            }
+            if (index < 0 || index > arr.length) {
+              replyString('');
+            } else {
+              replyString(arr[index]);
+            }
+          } else {
+            // FEHLER
+            socket.send('-index not a number'+eol);
+          }
+        }
+      },
+      llen : {
+        inline: true,
+        callback: function() {
+          debug("received LLEN command");
+          var key = that.args[1];
+          if(store.has(key)) {
+            reply(":" + store.get(key).length);
+          } else {
+            // FEHLER
+          }
+        }
+      },
+      lpush : {
+        inline: false,
+        callback: function() {
+          debug("received LPUSH command");
+          var key = that.args[1];
+          var value = that.data || EMPTY_VALUE;
+          if(!store.has(key)) {
+            store.set(key, [value]);
+          } else {
+            store.get(key).unshift(value);
+          }
+          socket.send(ok);
+        }
+      },
+      lpop : {
+        inline: true,
+        callback: function() {
+          debug("received LPOP command");
+          var key = that.args[1];
+          if(store.has(key)) {
+            reply(store.get(key).shift());
+          } else {
+            // FEHLER
+          }
+        }
+      },
+      rpush : {
+        inline: false,
+        callback: function() {
+          debug("received RPUSH command");
+          var key = that.args[1];
+          var value = that.data || EMPTY_VALUE;
+          if(!store.has(key)) {
+            store.set(key, [value]);
+          } else {
+            store.get(key).push(value);
+          }
+          socket.send(ok);
+        }
+      },
+      rpop : {
+        inline: false,
+        callback: function() {
+          debug("received RPOP command");
+          var key = that.args[1];
+          if(store.has(key)) {
+            reply(store.get(key).pop());
+          } else {
+            // FEHLER
+          }
+          
         }
       },
       
@@ -264,6 +378,14 @@ var server = tcp.createServer(function(socket) {
           socket.send(ok);
         }
       },
+      
+      foobaredcommand: {
+        inline: true,
+        callback: function() {
+          socket.send('-unknown function'+eol);
+        }
+      },  
+      
     };
 
     this.is_inline = function() {
@@ -294,18 +416,19 @@ var server = tcp.createServer(function(socket) {
 
   function debug(s) {
     if(enable_debug) {
-      sys.print(s + eol);
+      sys.print(s.substr(0,40) + eol);
     }
   }
 
   // for reading requests
 
   function adjustBuffer(buffer) {
-    return buffer.substr(buffer.lastIndexOf(eol) + 2)
+    return buffer.substr(buffer.indexOf(eol) + 2)
   }
 
   function parseData(s) {
-    return s.substring(s.indexOf(eol) + 2, s.lastIndexOf(eol));
+    var start = s.indexOf(eol) + 2;
+    return s.substring(start, s.indexOf(eol, start));
   }
 
   var buffer = "";
@@ -315,7 +438,7 @@ var server = tcp.createServer(function(socket) {
     buffer += packet;
     debug("read: '" + buffer.substr(0, 36) + "'");
     var idx;
-    if(idx = buffer.indexOf(eol) != -1) { // we have a newline
+    while (idx = buffer.indexOf(eol) != -1) { // we have a newline
       if(in_bulk_request) {
         debug("in bulk req");
         // later
@@ -342,7 +465,10 @@ var server = tcp.createServer(function(socket) {
         }
         buffer = adjustBuffer(buffer);
       }
-    }
+    }  
+    
+    // debug('buffer:' + buffer);
+    
   });
 
   socket.addListener("eof", function() {
