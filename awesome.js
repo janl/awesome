@@ -18,9 +18,40 @@ var store = require("./store");
 var server = tcp.createServer(function(socket) {
   // requests and responses have this as a trailer
   var eol = "\r\n";
-  var ok = "+OK" + eol;
-  
+
   var EMPTY_VALUE = {};
+
+  var reply = {
+    send: function(s) {
+      debug("reply: '" + s + "'");
+      socket.send(s + eol);
+    },
+
+    ok: function() {
+      this.send("+OK")
+    },
+
+    bulk: function(s) {
+      this.send("$" + s.toString().length);
+      this.send(s);
+    },
+
+    error: function(s) {
+      this.send("-ERR " + s);
+    },
+
+    _true: function() {
+      this.send(":1");
+    },
+
+    _false: function(s) {
+      this.send(":0");
+    },
+
+    nil: function(s) {
+      this.send("$-1");
+    },
+  };
 
   function Command(line) {
 
@@ -55,16 +86,6 @@ var server = tcp.createServer(function(socket) {
       return args;
     }
 
-    function reply(line) {
-      debug('reply: ' + line); 
-      socket.send(line + eol);
-    }
-    
-    function bulkReply(s) {
-      reply("$" + s.length);
-      reply(s);
-    }
-
     this.cmd = parseCommand(line).toLowerCase();
     this.args = parseArgs(line);
 
@@ -78,7 +99,7 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received DBSIZE command");
           var size = store.dbsize();
-          reply(":" + size);
+          reply.send(":" + size);
         }
       },
 
@@ -89,14 +110,14 @@ var server = tcp.createServer(function(socket) {
           if(that.args.length > 2) {
             var keys = that.args.slice(1);
             var deleted = store.del(keys);
-            reply(":" + deleted);
+            reply.send(":" + deleted);
           } else {
             var key = that.args[1];
             if(store.has(key)) {
               store.del(key);
-              reply(":1");
+              reply._true();
             } else {
-              reply(":0");
+              reply._false();
             }
           }
         }
@@ -111,14 +132,12 @@ var server = tcp.createServer(function(socket) {
             var value = store.get(key);
             if(EMPTY_VALUE === value) {
               // empty value
-              reply("$0");
-              reply("");
+              reply.bulk("");
             } else {
-              reply("$" + value.toString().length);
-              reply(value);
+              reply.bulk(value);
             }
           } else { // not found
-            reply("$-1");
+            reply.nil();
           }
         }
       },
@@ -130,10 +149,10 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           if(store.has(key)) {
             var value = store.get(key);
-            reply("$" + value.length);
-            reply(value);
+            reply.send("$" + value.length);
+            reply.send(value);
           } else { // not found
-            reply("-1");
+            reply.nil();
           }
         }
       },
@@ -143,7 +162,7 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           var key = that.args[1];
           var value = store.incr(key);
-          reply(":" + value);
+          reply.send(":" + value);
         }
       },
 
@@ -152,7 +171,7 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           var key = that.args[1];
           var value = store.decr(key);
-          reply(":" + value);
+          reply.send(":" + value);
         }
       },
 
@@ -162,7 +181,7 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           var increment = that.args[2];
           var value = store.incrby(key, increment);
-          reply(":" + value);
+          reply.send(":" + value);
         }
       },
 
@@ -172,7 +191,7 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           var decrement = that.args[2];
           var value = store.decrby(key, decrement);
-          reply(":" + value);
+          reply.send(":" + value);
         }
       },
 
@@ -182,9 +201,9 @@ var server = tcp.createServer(function(socket) {
           debug("received EXISTS command");
           var key = that.args[1];
           if(store.has(key)) {
-            reply(":1");
+            reply._true();
           } else {
-            reply(":0");
+            reply._false();
           }
         }
       },
@@ -193,7 +212,7 @@ var server = tcp.createServer(function(socket) {
         inline: true,
         callback: function() {
           debug("received INFO command");
-          reply("a5e, the awesome node.js redis clone");
+          reply.send("awesome, the awesome node.js redis clone");
         }
       },
 
@@ -203,8 +222,7 @@ var server = tcp.createServer(function(socket) {
           debug("received KEYS command");
           var pattern = that.args[1] || '*';
           var result = store.keys(pattern);
-          reply("$" + result.length);
-          reply(result);
+          reply.bulk(result);
         }
       },
 
@@ -214,13 +232,12 @@ var server = tcp.createServer(function(socket) {
           debug("received MGET command");
           var keys = that.args.slice(1);
           var values = store.mget(keys);
-          reply("*" + values.length);
+          reply.send("*" + values.length);
           values.forEach(function(value) {
             if(value) {
-              reply("$" + value.length);
-              reply(value);
+              reply.bulk(value);
             } else {
-              reply("$-1");
+              reply.nil();
             }
           });
         }
@@ -230,7 +247,7 @@ var server = tcp.createServer(function(socket) {
         inline: true,
         callback: function() {
           debug("received PING command");
-          reply("+PONG");
+          reply.send("+PONG");
         }
       },
 
@@ -248,7 +265,7 @@ var server = tcp.createServer(function(socket) {
           debug("received SELECT command");
           var index = that.args[1];
           store.select(index);
-          socket.send(ok);
+          reply.ok();
         }
       },
 
@@ -259,7 +276,7 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           var value = that.data || EMPTY_VALUE;
           store.set(key, value);
-          socket.send(ok);
+          reply.ok();
         }
       },
 
@@ -270,9 +287,9 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           if(!store.has(key)) {
             store.set(key, that.data);
-            reply(":1");
+            reply._true();
           } else {
-            reply(":0");
+            reply._false();
           }
         }
       },
@@ -294,16 +311,16 @@ var server = tcp.createServer(function(socket) {
           if(store.has(key)) {
             var value = store.get(key);
             if(!store.is_array(value)) {
-              reply("-ERR Operation against a key holding the wrong kind of value");
+              reply.error("Operation against a key holding the wrong kind of value");
               return;
             }
             if(index < 0) {
               index = value.length + index;
             }
             if(index < 0 || index > value.length) {
-              bulkReply('');
+              reply.bulk('');
             } else {
-              bulkReply(value[index]);
+              reply.bulk(value[index]);
             }
           }
         }
@@ -317,12 +334,12 @@ var server = tcp.createServer(function(socket) {
           var value = store.get(key);
           if(value !== false) {
             if(store.is_array(value)) {
-              reply(":" + value.length);
+              reply.send(":" + value.length);
             } else {
-              reply("-ERR Operation against a key holding the wrong kind of value");
+              reply.error("Operation against a key holding the wrong kind of value");
             }
           } else {
-            reply(":0");
+            reply.send(":0");
           }
         }
       },
@@ -340,11 +357,11 @@ var server = tcp.createServer(function(socket) {
             if(store.is_array(old_value)) {
               old_value.unshift(value);
             } else {
-              reply("-ERR Operation against a key holding the wrong kind of value");
+              reply.error("Operation against a key holding the wrong kind of value");
               return;
             }
           }
-          socket.send(ok);
+          reply.ok();
         }
       },
 
@@ -355,9 +372,9 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           var value = store.get(key);
           if(value && value.length > 0) {
-            reply(value.shift());
+            reply.send(value.shift());
           } else {
-            reply("$-1");
+            reply.send("$-1");
           }
         }
       },
@@ -375,11 +392,11 @@ var server = tcp.createServer(function(socket) {
             if(store.is_array(old_value)) {
               old_value.push(value);
             } else {
-              reply("-ERR Operation against a key holding the wrong kind of value");
+              reply.error("Operation against a key holding the wrong kind of value");
               return;
             }
           }
-          socket.send(ok);
+          reply.ok();
         }
       },
 
@@ -390,9 +407,9 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           var value = store.get(key);
           if(value && value.length > 0) {
-            reply(value.shift());
+            reply.send(value.shift());
           } else {
-            reply("$-1");
+            reply.send("$-1");
           }
         }
       },
@@ -403,7 +420,7 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received DUMP command");
           sys.print(store.dump() + eol);
-          socket.send(ok);
+          reply.ok();
         }
       },
 
