@@ -304,6 +304,7 @@ var server = tcp.createServer(function(socket) {
           }
         }
       },
+
       llen : {
         inline: true,
         callback: function() {
@@ -316,6 +317,7 @@ var server = tcp.createServer(function(socket) {
           }
         }
       },
+
       lpush : {
         inline: false,
         callback: function() {
@@ -330,6 +332,7 @@ var server = tcp.createServer(function(socket) {
           socket.send(ok);
         }
       },
+
       lpop : {
         inline: true,
         callback: function() {
@@ -342,6 +345,7 @@ var server = tcp.createServer(function(socket) {
           }
         }
       },
+ 
       rpush : {
         inline: false,
         callback: function() {
@@ -356,6 +360,7 @@ var server = tcp.createServer(function(socket) {
           socket.send(ok);
         }
       },
+
       rpop : {
         inline: false,
         callback: function() {
@@ -369,7 +374,7 @@ var server = tcp.createServer(function(socket) {
           
         }
       },
-      
+
       // for debugging
       dump: {
         inline: true,
@@ -379,14 +384,13 @@ var server = tcp.createServer(function(socket) {
           socket.send(ok);
         }
       },
-      
+
       foobaredcommand: {
         inline: true,
         callback: function() {
           socket.send('-unknown function'+eol);
         }
-      },  
-      
+      },
     };
 
     this.is_inline = function() {
@@ -409,7 +413,7 @@ var server = tcp.createServer(function(socket) {
         // ignoring unknown command
       }
     };
-    
+
     return this;
   }
 
@@ -466,10 +470,7 @@ var server = tcp.createServer(function(socket) {
         }
         buffer = adjustBuffer(buffer);
       }
-    }  
-    
-    // debug('buffer:' + buffer);
-    
+    }
   });
 
   socket.addListener("eof", function() {
