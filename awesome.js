@@ -283,21 +283,24 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received LINDEX command");
           var key = that.args[1];
-          var index = that.args[2];
-          
-          if(index && store.has(key)) {
+          var index = parseInt(that.args[2]);
+
+          if(!isNaN(index)) {
+            // Redis assumes index 0 when anything but an 
+            // integer is passed as the index
+            index = 0;
+          }
+
+          if(store.has(key)) {
             var arr = store.get(key);
             if(index < 0) {
-              index = arr.length + parseInt(index);
+              index = arr.length + index;
             }
             if(index < 0 || index > arr.length) {
               bulkReply('');
             } else {
               bulkReply(arr[index]);
             }
-          } else {
-            // FEHLER
-            socket.send('-index not a number'+eol);
           }
         }
       },
