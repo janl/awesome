@@ -229,7 +229,7 @@ var server = tcp.createServer(function(socket) {
       ping: {
         inline: true,
         callback: function() {
-          debug("received PING");
+          debug("received PING command");
           reply("+PONG");
         }
       },
