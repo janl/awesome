@@ -11,7 +11,6 @@ var PORT = 6379;
 var tcp = require("tcp");
 var sys = require("sys");
 
-
 var enable_debug = true;
 
 var store = require("./store");
@@ -61,7 +60,7 @@ var server = tcp.createServer(function(socket) {
       socket.send(line + eol);
     }
     
-    function replyString(s) {
+    function bulkReply(s) {
       reply("$" + s.length);
       reply(s);
     }
@@ -293,9 +292,9 @@ var server = tcp.createServer(function(socket) {
               index = arr.length + parseInt(index);
             }
             if (index < 0 || index > arr.length) {
-              replyString('');
+              bulkReply('');
             } else {
-              replyString(arr[index]);
+              bulkReply(arr[index]);
             }
           } else {
             // FEHLER
