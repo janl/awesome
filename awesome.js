@@ -278,7 +278,7 @@ var server = tcp.createServer(function(socket) {
       },
       
       // list related functions
-      lindex : {
+      lindex: {
         inline: true,
         callback: function() {
           debug("received LINDEX command");
@@ -309,7 +309,7 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
-      llen : {
+      llen: {
         inline: true,
         callback: function() {
           debug("received LLEN command");
@@ -327,7 +327,7 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
-      lpush : {
+      lpush: {
         inline: false,
         callback: function() {
           debug("received LPUSH command");
@@ -348,7 +348,7 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
-      lpop : {
+      lpop: {
         inline: true,
         callback: function() {
           debug("received LPOP command");
@@ -362,7 +362,7 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
-      rpush : {
+      rpush: {
         inline: false,
         callback: function() {
           debug("received RPUSH command");
@@ -383,7 +383,7 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
-      rpop : {
+      rpop: {
         inline: false,
         callback: function() {
           debug("received RPOP command");
