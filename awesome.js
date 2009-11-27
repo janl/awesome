@@ -332,7 +332,13 @@ var server = tcp.createServer(function(socket) {
           if(!store.has(key)) {
             store.set(key, [value]);
           } else {
-            store.get(key).unshift(value);
+            var value = store.get(key);
+            if(store.is_array(value)) {
+              store.unshift(value);
+            } else {
+              reply("-ERR Operation against a key holding the wrong kind of value");
+              return;
+            }
           }
           socket.send(ok);
         }
@@ -343,14 +349,15 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received LPOP command");
           var key = that.args[1];
-          if(store.has(key)) {
-            reply(store.get(key).shift());
+          var value = store.get(key);
+          if(value && value.length > 0) {
+            reply(value.shift());
           } else {
-            // FEHLER
+            reply("$-1");
           }
         }
       },
- 
+
       rpush : {
         inline: false,
         callback: function() {
@@ -360,7 +367,13 @@ var server = tcp.createServer(function(socket) {
           if(!store.has(key)) {
             store.set(key, [value]);
           } else {
-            store.get(key).push(value);
+            var value = store.get(key);
+            if(store.is_array(value)) {
+              store.push(value);
+            } else {
+              reply("-ERR Operation against a key holding the wrong kind of value");
+              return;
+            }
           }
           socket.send(ok);
         }
@@ -371,12 +384,12 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received RPOP command");
           var key = that.args[1];
-          if(store.has(key)) {
-            reply(store.get(key).pop());
+          var value = store.get(key);
+          if(value && value.length > 0) {
+            reply(value.shift());
           } else {
-            // FEHLER
+            reply("$-1");
           }
-          
         }
       },
 
