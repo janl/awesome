@@ -109,7 +109,7 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           if(store.has(key)) {
             var value = store.get(key);
-            if (EMPTY_VALUE === value) {
+            if(EMPTY_VALUE === value) {
               // empty value
               reply("$0");
               reply("");
@@ -284,14 +284,13 @@ var server = tcp.createServer(function(socket) {
           debug("received LINDEX command");
           var key = that.args[1];
           var index = that.args[2];
-          debug('index = ' +index);
           
-          if (index && store.has(key)) {
+          if(index && store.has(key)) {
             var arr = store.get(key);
-            if (index < 0) {
+            if(index < 0) {
               index = arr.length + parseInt(index);
             }
-            if (index < 0 || index > arr.length) {
+            if(index < 0 || index > arr.length) {
               bulkReply('');
             } else {
               bulkReply(arr[index]);
