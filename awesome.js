@@ -312,7 +312,7 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           var value = store.get(key);
           if(value !== false) {
-            if(store.is_array(value) {
+            if(store.is_array(value)) {
               reply(":" + value.length);
             } else {
               reply("$-1");
