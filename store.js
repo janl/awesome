@@ -114,6 +114,8 @@ exports.set = function(key, value) {
   stores[current][key] = value;
 };
 
+exports.is_array = is_array;
+
 // private
 
 function keymatch(key, pattern) {

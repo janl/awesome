@@ -310,10 +310,15 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received LLEN command");
           var key = that.args[1];
-          if(store.has(key)) {
-            reply(":" + store.get(key).length);
+          var value = store.get(key);
+          if(value !== false) {
+            if(store.is_array(value) {
+              reply(":" + value.length);
+            } else {
+              reply("$-1");
+            }
           } else {
-            // FEHLER
+            reply(":0");
           }
         }
       },
