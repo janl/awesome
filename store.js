@@ -42,7 +42,6 @@ exports.dump = function() {
 };
 
 exports.get = function(key) {
-  debug("getting: '" +key+ "'")
   return stores[current][key] || false;
 };
 
