@@ -407,12 +407,6 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
-      foobaredcommand: {
-        inline: true,
-        callback: function() {
-          socket.send("-ERR unknown function" + eol);
-        }
-      },
     };
 
     this.is_inline = function() {
@@ -428,11 +422,11 @@ var server = tcp.createServer(function(socket) {
     }
 
     this.exec = function() {
-      debug("in exec " + this.cmd);
+      debug("in exec '" + this.cmd + "'");
       if(callbacks[this.cmd]) {
         callbacks[this.cmd].callback(this.args);
       } else {
-        // ignoring unknown command
+        socket.send("-ERR unknown command" + eol);
       }
     };
 
@@ -465,7 +459,7 @@ var server = tcp.createServer(function(socket) {
     buffer += packet;
     debug("read: '" + buffer.substr(0, 36) + "'");
     var idx;
-    while (idx = buffer.indexOf(eol) != -1) { // we have a newline
+    while(idx = buffer.indexOf(eol) != -1) { // we have a newline
       if(in_bulk_request) {
         debug("in bulk req");
         // later
@@ -481,9 +475,11 @@ var server = tcp.createServer(function(socket) {
           cmd.exec();
         } else {
           if(buffer.indexOf(eol) != buffer.lastIndexOf(eol)) { // two new lines
+            debug("received a bulk command in a single buffer");
             // parse out command line
             cmd.setData(parseData(buffer));
             in_bulk_request = false;
+            buffer = adjustBuffer(buffer);
             cmd.exec();
           } else {
             debug("wait for bulk: '" + buffer + "'");
