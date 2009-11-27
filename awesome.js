@@ -285,21 +285,25 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           var index = parseInt(that.args[2]);
 
-          if(!isNaN(index)) {
+          if(isNaN(index)) {
             // Redis assumes index 0 when anything but an 
             // integer is passed as the index
             index = 0;
           }
 
           if(store.has(key)) {
-            var arr = store.get(key);
-            if(index < 0) {
-              index = arr.length + index;
+            var value = store.get(key);
+            if(!store.is_array(value)) {
+              reply("-ERR Operation against a key holding the wrong kind of value");
+              return;
             }
-            if(index < 0 || index > arr.length) {
+            if(index < 0) {
+              index = value.length + index;
+            }
+            if(index < 0 || index > value.length) {
               bulkReply('');
             } else {
-              bulkReply(arr[index]);
+              bulkReply(value[index]);
             }
           }
         }
@@ -315,7 +319,7 @@ var server = tcp.createServer(function(socket) {
             if(store.is_array(value)) {
               reply(":" + value.length);
             } else {
-              reply("$-1");
+              reply("-ERR Operation against a key holding the wrong kind of value");
             }
           } else {
             reply(":0");
@@ -332,9 +336,9 @@ var server = tcp.createServer(function(socket) {
           if(!store.has(key)) {
             store.set(key, [value]);
           } else {
-            var value = store.get(key);
-            if(store.is_array(value)) {
-              store.unshift(value);
+            var old_value = store.get(key);
+            if(store.is_array(old_value)) {
+              old_value.unshift(value);
             } else {
               reply("-ERR Operation against a key holding the wrong kind of value");
               return;
@@ -367,9 +371,9 @@ var server = tcp.createServer(function(socket) {
           if(!store.has(key)) {
             store.set(key, [value]);
           } else {
-            var value = store.get(key);
-            if(store.is_array(value)) {
-              store.push(value);
+            var old_value = store.get(key);
+            if(store.is_array(old_value)) {
+              old_value.push(value);
             } else {
               reply("-ERR Operation against a key holding the wrong kind of value");
               return;
@@ -406,7 +410,7 @@ var server = tcp.createServer(function(socket) {
       foobaredcommand: {
         inline: true,
         callback: function() {
-          socket.send('-unknown function'+eol);
+          socket.send("-ERR unknown function" + eol);
         }
       },
     };
