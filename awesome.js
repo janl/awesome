@@ -329,15 +329,11 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received LLEN command");
           var key = that.args[1];
-          var value = store.get(key);
-          if(value !== false) {
-            if(store.is_array(value)) {
-              reply.send(":" + value.length);
-            } else {
-              reply.error("Operation against a key holding the wrong kind of value");
-            }
+          var value = store.llen(key);
+          if(value === false) {
+            reply.error("Operation against a key holding the wrong kind of value");
           } else {
-            reply.send(":0");
+            reply.send(":" + value);
           }
         }
       },

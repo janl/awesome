@@ -137,6 +137,19 @@ exports.lindex = function(key, index) {
   return value[index];
 };
 
+exports.llen = function(key) {
+  if(!this.has(key)) {
+    return 0;
+  }
+
+  var value = this.get(key);
+  if(!is_array(value)) {
+    return false;
+  }
+
+  return value.length;
+}
+
 
 // TODO: move inline
 exports.is_array = is_array;
