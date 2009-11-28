@@ -41,6 +41,13 @@ var server = tcp.createServer(function(socket) {
       reply.send("$-1");
     },
 
+    multi_bulk: function(values) {
+      reply.send("*" + values.length);
+      values.forEach(function(value) {
+        reply.bulk(value);
+      });
+    },
+
     error: function(s) {
       reply.send("-ERR " + s);
     },
@@ -383,7 +390,7 @@ var server = tcp.createServer(function(socket) {
           var value = store.rpop(src);
           if(value === null) {
             reply.nil();
-          } if(value === false) {
+          } else if(value === false) {
             reply.error(E_LIST_VALUE);
           } else {
             if(store.lpush(dst, value)) {
@@ -400,7 +407,7 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           var start = that.args[2];
           var end = that.args[3];
-          var value = lrange(key, start, end);
+          var value = store.lrange(key, start, end);
           if(value === null) {
             reply.empty_bulk();
           } else {
@@ -447,7 +454,7 @@ var server = tcp.createServer(function(socket) {
   socket.setEncoding("utf8"); // check with redis protocol
 
   function debug(s) {
-    if(enable_debug) {
+    if(enable_debug && s !== null) {
       sys.print(s.substr(0,40) + eol);
     }
   }

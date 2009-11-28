@@ -157,7 +157,6 @@ exports.lpush = function(key, value) {
 
   var list = this.get(key);
   if(!this.is_array(list)) {
-    debug("not a list");
     return false;
   }
 
@@ -190,7 +189,6 @@ exports.rpush = function(key, value) {
 
   var list = this.get(key);
   if(!this.is_array(list)) {
-    debug("not a list");
     return false;
   }
 
@@ -214,6 +212,25 @@ exports.rpop = function(key) {
   }
 
   return value.pop();
+};
+
+exports.lrange = function(key, start, end) {
+  if(!this.has(key)) {
+    return null;
+  }
+  var value = this.get(key);
+  if(!value || !this.is_array(value)) {
+    return null;
+  }
+
+  var start = parseInt(start);
+  var end = parseInt(end);
+
+  if(end < 0) {
+    end = value.length + end + 1;
+  }
+  var slice =  value.slice(start, end);
+  return slice;
 };
 
 // TODO: make private again
