@@ -20,6 +20,7 @@ var server = tcp.createServer(function(socket) {
   var eol = "\r\n";
 
   var EMPTY_VALUE = {};
+  var E_LIST_VALUE = "Operation against a key holding the wrong kind of value";
 
   var reply = {
     send: function(s) {
@@ -54,7 +55,7 @@ var server = tcp.createServer(function(socket) {
 
     list: function(value, reply_function) {
       if(value === false) {
-        this.error("Operation against a key holding the wrong kind of value");
+        this.error(E_LIST_VALUE);
       } else if(value === null) {
         this.nil();
       } else {
@@ -316,7 +317,7 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           var value = store.llen(key);
           if(value === false) {
-            reply.error("Operation against a key holding the wrong kind of value");
+            reply.error(E_LIST_VALUE);
           } else {
             reply.send(":" + value);
           }
@@ -332,7 +333,7 @@ var server = tcp.createServer(function(socket) {
           if(store.lpush(key, value)) {
             reply.ok();
           } else {
-            reply.error("Operation against a key holding the wrong kind of value");
+            reply.error(E_LIST_VALUE);
           }
         }
       },
@@ -355,19 +356,39 @@ var server = tcp.createServer(function(socket) {
             if(store.rpush(key, value)) {
               reply.ok();
             } else {
-              reply.error("Operation against a key holding the wrong kind of value");
+              reply.error(E_LIST_VALUE);
             }
           }
       },
 
       rpop: {
-        bulk: true,
         callback: function() {
           debug("received RPOP command");
             var key = that.args[1];
             var value = store.rpop(key);
             reply.list(value, reply.send);
           }
+      },
+
+      rpoplpush: {
+        bulk: true,
+        callback: function() {
+          var src = that.args[1];
+          var dst = that.data;
+
+          var value = store.rpop(src);
+          if(value === null) {
+            reply.nil();
+          } if(value === false) {
+            reply.error(E_LIST_VALUE);
+          } else {
+            if(store.lpush(dst, value)) {
+              reply.bulk(value);
+            } else {
+              reply.error(E_LIST_VALUE);
+            }
+          }
+        }
       },
 
       // for debugging
@@ -429,7 +450,7 @@ var server = tcp.createServer(function(socket) {
   var cmd = {};
   socket.addListener("receive", function(packet) {
     buffer += packet;
-    debug("read: '" + buffer.substr(0, 36) + "'");
+    debug("read: '" + buffer.substr(0, 64) + "'");
     var idx;
     while(idx = buffer.indexOf(eol) != -1) { // we have a newline
       if(in_bulk_request) {
