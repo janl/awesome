@@ -226,11 +226,29 @@ exports.lrange = function(key, start, end) {
   var start = parseInt(start);
   var end = parseInt(end);
 
-  if(end < 0) {
-    end = value.length + end + 1;
+  if(end < 0) { // With Array.slice(start, end), end is non-inclusive
+    end = value.length + end + 1; // we need inclusive
   }
   var slice =  value.slice(start, end);
   return slice;
+};
+
+exports.type = function(key) {
+  if(!this.has(key)) {
+    return "none";
+  }
+
+  var value = this.get(key);
+  if(this.is_array(value)) {
+    return "list";
+  }
+
+  // TODO
+  // if(this.is_set(value)) {
+  //   return "set";
+  // }
+
+  return "string";
 };
 
 // TODO: make private again

@@ -73,6 +73,10 @@ var server = tcp.createServer(function(socket) {
         reply_function(value);
       }
     },
+
+    status: function(s) {
+      reply.send("+" + s);
+    }
   };
 
   function Command(line) {
@@ -396,6 +400,8 @@ var server = tcp.createServer(function(socket) {
             if(store.lpush(dst, value)) {
               reply.bulk(value);
             } else {
+              // restore src
+              store.rpush(src, value);
               reply.error(E_LIST_VALUE);
             }
           }
@@ -413,6 +419,13 @@ var server = tcp.createServer(function(socket) {
           } else {
             reply.multi_bulk(value);
           }
+        }
+      },
+
+      type: {
+        callback: function() {
+          var key = that.args[1];
+          reply.status(store.type(key));
         }
       },
 
