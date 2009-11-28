@@ -416,7 +416,7 @@ var server = tcp.createServer(function(socket) {
       if(callbacks[this.cmd]) {
         callbacks[this.cmd].callback(this.args);
       } else {
-        socket.send("-ERR unknown command" + eol);
+        reply.error("unknown command");
       }
     };
 
