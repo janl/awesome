@@ -404,7 +404,7 @@ var server = tcp.createServer(function(socket) {
           debug("received LPOP command");
           var key = that.args[1];
           var value = store.lpop(key);
-          reply.list(value, reply.send);
+          reply.list(value, reply.bulk);
         }
       },
 
@@ -427,7 +427,7 @@ var server = tcp.createServer(function(socket) {
           debug("received RPOP command");
             var key = that.args[1];
             var value = store.rpop(key);
-            reply.list(value, reply.send);
+            reply.list(value, reply.bulk);
           }
       },
 
@@ -464,6 +464,22 @@ var server = tcp.createServer(function(socket) {
             reply.empty_bulk();
           } else {
             reply.multi_bulk(value);
+          }
+        }
+      },
+
+      ltrim: {
+        callback: function() {
+          var key = that.args[1];
+          var start = that.args[2];
+          var end = that.args[3];
+          var status = store.ltrim(key, start, end);
+          if(status === null) {
+            reply.error("no such key");
+          } else if(status === false) {
+            reply.error(E_LIST_VALUE);
+          } else {
+            reply.ok();
           }
         }
       },
@@ -507,7 +523,7 @@ var server = tcp.createServer(function(socket) {
 
   function debug(s) {
     if(enable_debug && s !== null) {
-      sys.print(s.substr(0,40) + eol);
+      sys.print(s.toString().substr(0,40) + eol);
     }
   }
 

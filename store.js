@@ -202,7 +202,7 @@ exports.lpop = function(key) {
   }
 
   if(value.length == 0) {
-    return false;
+    return null;
   }
 
   return value.shift();
@@ -234,7 +234,7 @@ exports.rpop = function(key) {
   }
 
   if(value.length == 0) {
-    return false;
+    return null;
   }
 
   return value.pop();
@@ -255,8 +255,20 @@ exports.lrange = function(key, start, end) {
   if(end < 0) { // With Array.slice(start, end), end is non-inclusive
     end = value.length + end + 1; // we need inclusive
   }
+
+  if(start == end) {
+    end = end + 1; // eeeenclusive
+  }
   var slice =  value.slice(start, end);
   return slice;
+};
+
+exports.ltrim = function(key, start, end) {
+  var value = this.lrange(key, start, parseInt(end) + 1);
+  if(value) {
+    this.set(key, value);
+  }
+  return value;
 };
 
 exports.type = function(key) {
