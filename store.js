@@ -263,6 +263,26 @@ exports.lrange = function(key, start, end) {
   return slice;
 };
 
+exports.lset = function(key, index, value) {
+  if(!this.has(key)) {
+    return null;
+  }
+
+  var list = this.get(key);
+  if(!is_array(list)) {
+    return false;
+  }
+  index = parseInt(index);
+  if(index < 0) {
+    index = list.length + index; // support negative indexes
+  }
+
+  if(index < list.length) {
+    list[index] = value;
+    return true;
+  }
+};
+
 exports.ltrim = function(key, start, end) {
   var value = this.lrange(key, start, parseInt(end) + 1);
   if(value) {

@@ -468,6 +468,26 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      lset: {
+        bulk: true,
+        callback: function() {
+          var key = that.args[1];
+          var index = that.args[2];
+          var value = that.data;
+
+          var result = store.lset(key, index, value);
+          if(result === null) {
+            reply.error("no such key");
+          } else if(result === undefined) {
+            reply.error("index out of range");
+          } else if(result === false) {
+            reply.error(E_LIST_VALUE);
+          } else {
+            reply.ok();
+          }
+        }
+      },
+
       ltrim: {
         callback: function() {
           var key = that.args[1];
