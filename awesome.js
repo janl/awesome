@@ -309,18 +309,16 @@ var server = tcp.createServer(function(socket) {
           }
 
           if(store.has(key)) {
-            var value = store.get(key);
-            if(!store.is_array(value)) {
+            var value = store.lindex(key, index);
+            switch(value) {
+            case false:
               reply.error("Operation against a key holding the wrong kind of value");
-              return;
-            }
-            if(index < 0) {
-              index = value.length + index;
-            }
-            if(index < 0 || index > value.length) {
-              reply.bulk('');
-            } else {
-              reply.bulk(value[index]);
+              break;
+            case null:
+              reply.nil();
+              break;
+            default:
+              reply.bulk(value);
             }
           }
         }

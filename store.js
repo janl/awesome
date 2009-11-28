@@ -114,6 +114,31 @@ exports.set = function(key, value) {
   stores[current][key] = value;
 };
 
+// list functions
+
+exports.lindex = function(key, index) {
+  if(!this.has(key)) {
+    return null;
+  }
+
+  var value = this.get(key);
+  if(!this.is_array(value)) {
+    return false;
+  }
+
+  if(index < 0) { // support negative int wrapping
+    index = value.length + index;
+  }
+
+  if(index < 0 || index > value.length) { // out of bound returns the empty string
+    return "";
+  }
+
+  return value[index];
+};
+
+
+// TODO: move inline
 exports.is_array = is_array;
 
 // private
