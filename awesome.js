@@ -310,14 +310,11 @@ var server = tcp.createServer(function(socket) {
 
           if(store.has(key)) {
             var value = store.lindex(key, index);
-            switch(value) {
-            case false:
+            if(value === false) {
               reply.error("Operation against a key holding the wrong kind of value");
-              break;
-            case null:
+            } else if(value === null) {
               reply.nil();
-              break;
-            default:
+            } else {
               reply.bulk(value);
             }
           }
@@ -358,16 +355,14 @@ var server = tcp.createServer(function(socket) {
           debug("received LPOP command");
           var key = that.args[1];
           var value = store.lpop(key);
-          switch(value) {
-          case false:
+          if(value === false) {
             reply.error("Operation against a key holding the wrong kind of value");
-            break;
-          case null:
+          } else if(value === null) {
             reply.nil();
-            break;
-          default:
+          } else {
             reply.send(value);
-          } 
+          }
+
         }
       },
 
@@ -375,35 +370,30 @@ var server = tcp.createServer(function(socket) {
         inline: false,
         callback: function() {
           debug("received RPUSH command");
-          var key = that.args[1];
-          var value = that.data || EMPTY_VALUE;
-          if(!store.has(key)) {
-            store.set(key, [value]);
-          } else {
-            var old_value = store.get(key);
-            if(store.is_array(old_value)) {
-              old_value.push(value);
+            var key = that.args[1];
+            var value = that.data || EMPTY_VALUE;
+            if(store.rpush(key, value)) {
+              reply.ok();
             } else {
               reply.error("Operation against a key holding the wrong kind of value");
-              return;
             }
           }
-          reply.ok();
-        }
       },
 
       rpop: {
         inline: false,
         callback: function() {
           debug("received RPOP command");
-          var key = that.args[1];
-          var value = store.get(key);
-          if(value && value.length > 0) {
-            reply.send(value.shift());
-          } else {
-            reply.send("$-1");
+            var key = that.args[1];
+            var value = store.rpop(key);
+            if(value === false) {
+              reply.error("Operation against a key holding the wrong kind of value");
+            } else if(value === null) {
+              reply.nil();
+            } else {
+              reply.send(value);
+            }
           }
-        }
       },
 
       // for debugging

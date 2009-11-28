@@ -183,6 +183,38 @@ exports.lpop = function(key) {
   return value.shift();
 };
 
+exports.rpush = function(key, value) {
+  if(!this.has(key)) {
+    this.set(key, []);
+  }
+
+  var list = this.get(key);
+  if(!this.is_array(list)) {
+    debug("not a list");
+    return false;
+  }
+
+  list.push(value);
+  this.set(key, list);
+  return true;
+};
+
+exports.rpop = function(key) {
+  if(!this.has(key)) {
+    return null;
+  }
+
+  var value = this.get(key);
+  if(!this.is_array(value)) {
+    return false;
+  }
+
+  if(value.length == 0) {
+    return false;
+  }
+
+  return value.pop();
+};
 
 // TODO: make private again
 exports.is_array = is_array;
