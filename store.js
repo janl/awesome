@@ -42,7 +42,7 @@ exports.dump = function() {
 };
 
 exports.get = function(key) {
-  return stores[current][key] || false;
+  return stores[current][key] || null;
 };
 
 exports.has = function(key) {
@@ -150,8 +150,24 @@ exports.llen = function(key) {
   return value.length;
 }
 
+exports.lpush = function(key, value) {
+  if(!this.has(key)) {
+    this.set(key, []);
+  }
 
-// TODO: move inline
+  var list = this.get(key);
+  if(!this.is_array(list)) {
+    debug("not a list");
+    return false;
+  }
+
+  list.unshift(value);
+  this.set(key, list);
+  return true;
+};
+
+
+// TODO: make private again
 exports.is_array = is_array;
 
 // private

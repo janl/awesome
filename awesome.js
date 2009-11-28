@@ -344,18 +344,11 @@ var server = tcp.createServer(function(socket) {
           debug("received LPUSH command");
           var key = that.args[1];
           var value = that.data || EMPTY_VALUE;
-          if(!store.has(key)) {
-            store.set(key, [value]);
+          if(store.lpush(key, value)) {
+            reply.ok();
           } else {
-            var old_value = store.get(key);
-            if(store.is_array(old_value)) {
-              old_value.unshift(value);
-            } else {
-              reply.error("Operation against a key holding the wrong kind of value");
-              return;
-            }
+            reply.error("Operation against a key holding the wrong kind of value");
           }
-          reply.ok();
         }
       },
 
