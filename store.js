@@ -45,8 +45,9 @@ exports.get = function(key) {
   return stores[current][key] || null;
 };
 
-exports.has = function(key) {
-  return !!stores[current][key];
+exports.has = function(key, dbindex) {
+  dbindex = dbindex || current;
+  return !!stores[dbindex][key];
 };
 
 exports.incr = function(key) {
@@ -103,6 +104,20 @@ exports.mget = function(keys) {
   });
 };
 
+exports.move = function(key, dbindex) {
+  if(!this.has(key)) {
+    return false;
+  }
+
+  if(this.has(key, dbindex)) {
+    return false;
+  }
+
+  var value = this.get(key);
+  this.set(key, value, dbindex);
+  this.del(key);
+};
+
 exports.rename = function(src, dst, do_not_overwrite) {
   if(do_not_overwrite) {
     if(this.has(dst)) {
@@ -120,8 +135,9 @@ exports.select = function(index) {
   }
 };
 
-exports.set = function(key, value) {
-  stores[current][key] = value;
+exports.set = function(key, value, dbindex) {
+  dbindex = dbindex || current;
+  stores[dbindex][key] = value;
 };
 
 // list functions

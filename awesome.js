@@ -255,6 +255,15 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      move: {
+        callback: function() {
+          debug("received MOVE command");
+          var key = that.args[1];
+          var dbindex = that.args[2];
+          reply.bool(store.move(key, dbindex));
+        }
+      },
+
       ping: {
         callback: function() {
           debug("received PING command");
