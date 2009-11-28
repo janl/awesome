@@ -105,7 +105,6 @@ var server = tcp.createServer(function(socket) {
       // keep sorted alphabetically
       // list-related functions at the end
       dbsize: {
-        inline: true,
         callback: function() {
           debug("received DBSIZE command");
           var size = store.dbsize();
@@ -114,7 +113,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       del: {
-        inline: true,
         callback:function() {
           debug("received DEL command");
           if(that.args.length > 2) {
@@ -134,7 +132,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       get: {
-        inline: true,
         callback: function() {
           debug("received GET command");
           var key = that.args[1];
@@ -153,7 +150,7 @@ var server = tcp.createServer(function(socket) {
       },
 
       getset: {
-        inline: false,
+        bulk: true,
         callback: function() {
           debug("received GETSET command");
           var key = that.args[1];
@@ -168,7 +165,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       incr: {
-        inline: true,
         callback: function() {
           var key = that.args[1];
           var value = store.incr(key);
@@ -177,7 +173,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       decr: {
-        inline: true,
         callback: function() {
           var key = that.args[1];
           var value = store.decr(key);
@@ -186,7 +181,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       incrby: {
-        inline: true,
         callback: function() {
           var key = that.args[1];
           var increment = that.args[2];
@@ -196,7 +190,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       decrby: {
-        inline: true,
         callback: function() {
           var key = that.args[1];
           var decrement = that.args[2];
@@ -206,7 +199,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       exists: {
-        inline: true,
         callback: function() {
           debug("received EXISTS command");
           var key = that.args[1];
@@ -219,7 +211,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       info: {
-        inline: true,
         callback: function() {
           debug("received INFO command");
           reply.send("awesome, the awesome node.js redis clone");
@@ -227,7 +218,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       keys: {
-        inline: true,
         callback: function() {
           debug("received KEYS command");
           var pattern = that.args[1] || '*';
@@ -237,7 +227,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       mget: {
-        inline: true,
         callback: function() {
           debug("received MGET command");
           var keys = that.args.slice(1);
@@ -254,7 +243,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       ping: {
-        inline: true,
         callback: function() {
           debug("received PING command");
           reply.send("+PONG");
@@ -262,7 +250,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       quit: {
-        inline: true,
         callback: function() {
           debug("received QUIT command");
           socket.close();
@@ -270,7 +257,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       select: {
-        inline: true,
         callback: function() {
           debug("received SELECT command");
           var index = that.args[1];
@@ -280,7 +266,7 @@ var server = tcp.createServer(function(socket) {
       },
 
       set: {
-        inline: false,
+        bulk: true,
         callback: function() {
           debug("received SET command");
           var key = that.args[1];
@@ -291,7 +277,7 @@ var server = tcp.createServer(function(socket) {
       },
 
       setnx: {
-        inline: false,
+        bulk: true,
         callback: function() {
           debug("received SETNX command");
           var key = that.args[1];
@@ -306,7 +292,6 @@ var server = tcp.createServer(function(socket) {
       
       // list related functions
       lindex: {
-        inline: true,
         callback: function() {
           debug("received LINDEX command");
           var key = that.args[1];
@@ -326,7 +311,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       llen: {
-        inline: true,
         callback: function() {
           debug("received LLEN command");
           var key = that.args[1];
@@ -340,7 +324,7 @@ var server = tcp.createServer(function(socket) {
       },
 
       lpush: {
-        inline: false,
+        bulk: true,
         callback: function() {
           debug("received LPUSH command");
           var key = that.args[1];
@@ -354,7 +338,6 @@ var server = tcp.createServer(function(socket) {
       },
 
       lpop: {
-        inline: true,
         callback: function() {
           debug("received LPOP command");
           var key = that.args[1];
@@ -364,7 +347,7 @@ var server = tcp.createServer(function(socket) {
       },
 
       rpush: {
-        inline: false,
+        bulk: true,
         callback: function() {
           debug("received RPUSH command");
             var key = that.args[1];
@@ -378,7 +361,7 @@ var server = tcp.createServer(function(socket) {
       },
 
       rpop: {
-        inline: false,
+        bulk: true,
         callback: function() {
           debug("received RPOP command");
             var key = that.args[1];
@@ -389,7 +372,6 @@ var server = tcp.createServer(function(socket) {
 
       // for debugging
       dump: {
-        inline: true,
         callback: function() {
           debug("received DUMP command");
           sys.print(store.dump() + eol);
@@ -404,7 +386,7 @@ var server = tcp.createServer(function(socket) {
         return true; // unkown cmds are inline
       }
 
-      return callbacks[this.cmd].inline;
+      return !callbacks[this.cmd].bulk;
     };
 
     this.setData = function(data) {
