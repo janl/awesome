@@ -37,6 +37,10 @@ var server = tcp.createServer(function(socket) {
       reply.send(s);
     },
 
+    empty_bulk: function() {
+      reply.send("$-1");
+    },
+
     error: function(s) {
       reply.send("-ERR " + s);
     },
@@ -387,6 +391,20 @@ var server = tcp.createServer(function(socket) {
             } else {
               reply.error(E_LIST_VALUE);
             }
+          }
+        }
+      },
+
+      lrange: {
+        callback: function() {
+          var key = that.args[1];
+          var start = that.args[2];
+          var end = that.args[3];
+          var value = lrange(key, start, end);
+          if(value === null) {
+            reply.empty_bulk();
+          } else {
+            reply.multi_bulk(value);
           }
         }
       },
