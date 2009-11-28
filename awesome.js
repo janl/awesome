@@ -52,12 +52,9 @@ var server = tcp.createServer(function(socket) {
       reply.send("-ERR " + s);
     },
 
-    _true: function() {
-      reply.send(":1");
-    },
-
-    _false: function(s) {
-      reply.send(":0");
+    bool: function(bool) {
+      var code = bool ? 1 : 0;
+      reply.send(":" + code);
     },
 
     nil: function(s) {
@@ -139,9 +136,9 @@ var server = tcp.createServer(function(socket) {
             var key = that.args[1];
             if(store.has(key)) {
               store.del(key);
-              reply._true();
+              reply.bool(true);
             } else {
-              reply._false();
+              reply.bool(false);
             }
           }
         }
@@ -219,9 +216,9 @@ var server = tcp.createServer(function(socket) {
           debug("received EXISTS command");
           var key = that.args[1];
           if(store.has(key)) {
-            reply._true();
+            reply.bool(true);
           } else {
-            reply._false();
+            reply.bool(false);
           }
         }
       },
@@ -272,6 +269,39 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      rename: {
+        callback: function() {
+          debug("received RENAME command");
+          var src = that.args[1];
+          var dst = that.args[2];
+          if(src == dst) {
+            reply.error("source and destination objects are the same");
+          } else if(!store.has(src)) {
+            reply.error("no such key");
+          } else {
+            store.rename(src, dst);
+            reply.ok();
+          }
+        }
+      },
+
+      renamenx: {
+        callback: function() {
+          debug("received RENAMENX command");
+          var src = that.args[1];
+          var dst = that.args[2];
+          if(src == dst) {
+            reply.error("source and destination objects are the same");
+          } else {
+            if(store.rename(src, dst, true)) {
+              reply.bool(true);
+            } else {
+              reply.bool(false);
+            }
+          }
+        }
+      },
+
       select: {
         callback: function() {
           debug("received SELECT command");
@@ -299,13 +329,20 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           if(!store.has(key)) {
             store.set(key, that.data);
-            reply._true();
+            reply.bool(true);
           } else {
-            reply._false();
+            reply.bool(false);
           }
         }
       },
-      
+
+      type: {
+        callback: function() {
+          var key = that.args[1];
+          reply.status(store.type(key));
+        }
+      },
+
       // list related functions
       lindex: {
         callback: function() {
@@ -419,13 +456,6 @@ var server = tcp.createServer(function(socket) {
           } else {
             reply.multi_bulk(value);
           }
-        }
-      },
-
-      type: {
-        callback: function() {
-          var key = that.args[1];
-          reply.status(store.type(key));
         }
       },
 

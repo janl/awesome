@@ -103,6 +103,16 @@ exports.mget = function(keys) {
   });
 };
 
+exports.rename = function(src, dst, do_not_overwrite) {
+  if(do_not_overwrite) {
+    if(this.has(dst)) {
+      return false;
+    }
+  }
+  this.set(dst, this.get(src));
+  this.del(src);
+};
+
 exports.select = function(index) {
   current = index;
   if(!stores[current]) {
