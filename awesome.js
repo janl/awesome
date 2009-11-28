@@ -28,28 +28,38 @@ var server = tcp.createServer(function(socket) {
     },
 
     ok: function() {
-      this.send("+OK")
+      reply.send("+OK")
     },
 
     bulk: function(s) {
-      this.send("$" + s.toString().length);
-      this.send(s);
+      reply.send("$" + s.toString().length);
+      reply.send(s);
     },
 
     error: function(s) {
-      this.send("-ERR " + s);
+      reply.send("-ERR " + s);
     },
 
     _true: function() {
-      this.send(":1");
+      reply.send(":1");
     },
 
     _false: function(s) {
-      this.send(":0");
+      reply.send(":0");
     },
 
     nil: function(s) {
-      this.send("$-1");
+      reply.send("$-1");
+    },
+
+    list: function(value, reply_function) {
+      if(value === false) {
+        this.error("Operation against a key holding the wrong kind of value");
+      } else if(value === null) {
+        this.nil();
+      } else {
+        reply_function(value);
+      }
     },
   };
 
@@ -309,19 +319,8 @@ var server = tcp.createServer(function(socket) {
           }
 
           if(store.has(key)) {
-            var value = store.get(key);
-            if(!store.is_array(value)) {
-              reply.error("Operation against a key holding the wrong kind of value");
-              return;
-            }
-            if(index < 0) {
-              index = value.length + index;
-            }
-            if(index < 0 || index > value.length) {
-              reply.bulk('');
-            } else {
-              reply.bulk(value[index]);
-            }
+            var value = store.lindex(key, index);
+            reply.list(value, reply.bulk);
           }
         }
       },
@@ -331,15 +330,11 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received LLEN command");
           var key = that.args[1];
-          var value = store.get(key);
-          if(value !== false) {
-            if(store.is_array(value)) {
-              reply.send(":" + value.length);
-            } else {
-              reply.error("Operation against a key holding the wrong kind of value");
-            }
+          var value = store.llen(key);
+          if(value === false) {
+            reply.error("Operation against a key holding the wrong kind of value");
           } else {
-            reply.send(":0");
+            reply.send(":" + value);
           }
         }
       },
@@ -350,18 +345,11 @@ var server = tcp.createServer(function(socket) {
           debug("received LPUSH command");
           var key = that.args[1];
           var value = that.data || EMPTY_VALUE;
-          if(!store.has(key)) {
-            store.set(key, [value]);
+          if(store.lpush(key, value)) {
+            reply.ok();
           } else {
-            var old_value = store.get(key);
-            if(store.is_array(old_value)) {
-              old_value.unshift(value);
-            } else {
-              reply.error("Operation against a key holding the wrong kind of value");
-              return;
-            }
+            reply.error("Operation against a key holding the wrong kind of value");
           }
-          reply.ok();
         }
       },
 
@@ -370,12 +358,8 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received LPOP command");
           var key = that.args[1];
-          var value = store.get(key);
-          if(value && value.length > 0) {
-            reply.send(value.shift());
-          } else {
-            reply.send("$-1");
-          }
+          var value = store.lpop(key);
+          reply.list(value, reply.send);
         }
       },
 
@@ -383,35 +367,24 @@ var server = tcp.createServer(function(socket) {
         inline: false,
         callback: function() {
           debug("received RPUSH command");
-          var key = that.args[1];
-          var value = that.data || EMPTY_VALUE;
-          if(!store.has(key)) {
-            store.set(key, [value]);
-          } else {
-            var old_value = store.get(key);
-            if(store.is_array(old_value)) {
-              old_value.push(value);
+            var key = that.args[1];
+            var value = that.data || EMPTY_VALUE;
+            if(store.rpush(key, value)) {
+              reply.ok();
             } else {
               reply.error("Operation against a key holding the wrong kind of value");
-              return;
             }
           }
-          reply.ok();
-        }
       },
 
       rpop: {
         inline: false,
         callback: function() {
           debug("received RPOP command");
-          var key = that.args[1];
-          var value = store.get(key);
-          if(value && value.length > 0) {
-            reply.send(value.shift());
-          } else {
-            reply.send("$-1");
+            var key = that.args[1];
+            var value = store.rpop(key);
+            reply.list(value, reply.send);
           }
-        }
       },
 
       // for debugging

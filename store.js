@@ -42,7 +42,7 @@ exports.dump = function() {
 };
 
 exports.get = function(key) {
-  return stores[current][key] || false;
+  return stores[current][key] || null;
 };
 
 exports.has = function(key) {
@@ -114,6 +114,109 @@ exports.set = function(key, value) {
   stores[current][key] = value;
 };
 
+// list functions
+
+exports.lindex = function(key, index) {
+  if(!this.has(key)) {
+    return null;
+  }
+
+  var value = this.get(key);
+  if(!this.is_array(value)) {
+    return false;
+  }
+
+  if(index < 0) { // support negative int wrapping
+    index = value.length + index;
+  }
+
+  if(index < 0 || index > value.length) { // out of bound returns the empty string
+    return "";
+  }
+
+  return value[index];
+};
+
+exports.llen = function(key) {
+  if(!this.has(key)) {
+    return 0;
+  }
+
+  var value = this.get(key);
+  if(!is_array(value)) {
+    return false;
+  }
+
+  return value.length;
+}
+
+exports.lpush = function(key, value) {
+  if(!this.has(key)) {
+    this.set(key, []);
+  }
+
+  var list = this.get(key);
+  if(!this.is_array(list)) {
+    debug("not a list");
+    return false;
+  }
+
+  list.unshift(value);
+  this.set(key, list);
+  return true;
+};
+
+exports.lpop = function(key) {
+  if(!this.has(key)) {
+    return null;
+  }
+
+  var value = this.get(key);
+  if(!this.is_array(value)) {
+    return false;
+  }
+
+  if(value.length == 0) {
+    return false;
+  }
+
+  return value.shift();
+};
+
+exports.rpush = function(key, value) {
+  if(!this.has(key)) {
+    this.set(key, []);
+  }
+
+  var list = this.get(key);
+  if(!this.is_array(list)) {
+    debug("not a list");
+    return false;
+  }
+
+  list.push(value);
+  this.set(key, list);
+  return true;
+};
+
+exports.rpop = function(key) {
+  if(!this.has(key)) {
+    return null;
+  }
+
+  var value = this.get(key);
+  if(!this.is_array(value)) {
+    return false;
+  }
+
+  if(value.length == 0) {
+    return false;
+  }
+
+  return value.pop();
+};
+
+// TODO: make private again
 exports.is_array = is_array;
 
 // private
