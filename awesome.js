@@ -28,28 +28,38 @@ var server = tcp.createServer(function(socket) {
     },
 
     ok: function() {
-      this.send("+OK")
+      reply.send("+OK")
     },
 
     bulk: function(s) {
-      this.send("$" + s.toString().length);
-      this.send(s);
+      reply.send("$" + s.toString().length);
+      reply.send(s);
     },
 
     error: function(s) {
-      this.send("-ERR " + s);
+      reply.send("-ERR " + s);
     },
 
     _true: function() {
-      this.send(":1");
+      reply.send(":1");
     },
 
     _false: function(s) {
-      this.send(":0");
+      reply.send(":0");
     },
 
     nil: function(s) {
-      this.send("$-1");
+      reply.send("$-1");
+    },
+
+    list: function(value, reply_function) {
+      if(value === false) {
+        this.error("Operation against a key holding the wrong kind of value");
+      } else if(value === null) {
+        this.nil();
+      } else {
+        reply_function(value);
+      }
     },
   };
 
@@ -310,13 +320,7 @@ var server = tcp.createServer(function(socket) {
 
           if(store.has(key)) {
             var value = store.lindex(key, index);
-            if(value === false) {
-              reply.error("Operation against a key holding the wrong kind of value");
-            } else if(value === null) {
-              reply.nil();
-            } else {
-              reply.bulk(value);
-            }
+            reply.list(value, reply.bulk);
           }
         }
       },
@@ -355,14 +359,7 @@ var server = tcp.createServer(function(socket) {
           debug("received LPOP command");
           var key = that.args[1];
           var value = store.lpop(key);
-          if(value === false) {
-            reply.error("Operation against a key holding the wrong kind of value");
-          } else if(value === null) {
-            reply.nil();
-          } else {
-            reply.send(value);
-          }
-
+          reply.list(value, reply.send);
         }
       },
 
@@ -386,13 +383,7 @@ var server = tcp.createServer(function(socket) {
           debug("received RPOP command");
             var key = that.args[1];
             var value = store.rpop(key);
-            if(value === false) {
-              reply.error("Operation against a key holding the wrong kind of value");
-            } else if(value === null) {
-              reply.nil();
-            } else {
-              reply.send(value);
-            }
+            reply.list(value, reply.send);
           }
       },
 
