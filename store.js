@@ -166,6 +166,23 @@ exports.lpush = function(key, value) {
   return true;
 };
 
+exports.lpop = function(key) {
+  if(!this.has(key)) {
+    return null;
+  }
+
+  var value = this.get(key);
+  if(!this.is_array(value)) {
+    return false;
+  }
+
+  if(value.length == 0) {
+    return false;
+  }
+
+  return value.shift();
+};
+
 
 // TODO: make private again
 exports.is_array = is_array;

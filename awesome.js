@@ -357,12 +357,17 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received LPOP command");
           var key = that.args[1];
-          var value = store.get(key);
-          if(value && value.length > 0) {
-            reply.send(value.shift());
-          } else {
-            reply.send("$-1");
-          }
+          var value = store.lpop(key);
+          switch(value) {
+          case false:
+            reply.error("Operation against a key holding the wrong kind of value");
+            break;
+          case null:
+            reply.nil();
+            break;
+          default:
+            reply.send(value);
+          } 
         }
       },
 
