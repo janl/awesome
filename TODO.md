@@ -10,3 +10,4 @@ A bunch of things I'd like to see improved, in no particular order.
 * Create output like Redis does
 * Dump to file
 * Simplify arg fetching in Command
+* Match Redis big-O guarantees
