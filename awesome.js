@@ -230,7 +230,33 @@ var server = tcp.createServer(function(socket) {
       info: {
         callback: function() {
           debug("received INFO command");
-          reply.send("awesome, the awesome node.js redis clone");
+          // TODO
+          /*
+          edis_version:0.07
+          connected_clients:1
+          connected_slaves:0
+          used_memory:3187
+          changes_since_last_save:0
+          last_save_time:1237655729
+          total_connections_received:1
+          total_commands_processed:1
+          uptime_in_seconds:25
+          uptime_in_days:0          
+          */
+          var info = [
+            "redis_version:0.07",
+            "connected_clients:1",
+            "connected_slaves:0",
+            "used_memory:3187",
+            "changes_since_last_save:0",
+            "last_save_time:1237655729",
+            "total_connections_received:1",
+            "total_commands_processed:1",
+            "uptime_in_seconds:25",
+            "uptime_in_days:0",
+            "bgsave_in_progress:0",
+          ];
+          reply.bulk(info);
         }
       },
 
@@ -640,11 +666,18 @@ var server = tcp.createServer(function(socket) {
 
       spop: {
         callback: function() {
+          debug("received SPOP command");
           var key = that.args[1];
-          store.spop(key);
-          reply.send(member);
+          var result = store.spop(key);
+          if(result === null) {
+            reply.nil();
+          } else if(result === false) {
+            reply.error(E_VALUE);
+          } else {
+            reply.bulk(result);
+          }
         }
-      }
+      },
 
       // for debugging
       dump: {

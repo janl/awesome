@@ -454,6 +454,7 @@ exports.spop = function(key) {
   }
 
   for(var member in set) {
+    delete set[member];
     return member;
   }
 };
