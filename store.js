@@ -350,6 +350,9 @@ exports.sinter = function(keys, dont_convert_to_array) {
     var tmp = this.get(first_key);
   } while(!tmp);
 
+  // deep copy sucks
+  tmp = JSON.parse(JSON.stringify(tmp));
+
   keys.forEach(function(key) {
     var set = this.get(key);
     if(!set) {
@@ -374,7 +377,6 @@ exports.sinter = function(keys, dont_convert_to_array) {
   }
 
   return result;
-
 };
 
 exports.sunion = function(keys, dont_convert_to_array) {
@@ -395,6 +397,31 @@ exports.sunion = function(keys, dont_convert_to_array) {
 
   var result = [];
   for(var idx in union) {
+    result.push(idx);
+  }
+
+  return result;
+};
+
+exports.sdiff = function(keys, dont_convert_to_array) {
+  var first_key = keys.shift();
+  var tmp = this.get(first_key);
+
+  keys.forEach(function(key) {
+    var set = this.get(key);
+    for(var member in set) {
+      if(tmp[member]) {
+        delete tmp[member];
+      }
+    }
+  }, this);
+
+  if(dont_convert_to_array) {
+    return tmp;
+  }
+
+  var result = [];
+  for(var idx in tmp) {
     result.push(idx);
   }
 

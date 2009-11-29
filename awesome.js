@@ -24,7 +24,7 @@ var server = tcp.createServer(function(socket) {
 
   var reply = {
     send: function(s) {
-      debug("reply: '" + s + "'");
+      // debug("reply: '" + s + "'");
       socket.send(s + eol);
     },
 
@@ -572,6 +572,14 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      sdiff: {
+        callback: function() {
+          var keys = that.args.slice(1);
+          var result = store.sdiff(keys);
+          reply.multi_bulk(result);
+        }
+      },
+
       sinter: {
         callback: function() {
           var keys = that.args.slice(1);
@@ -607,6 +615,20 @@ var server = tcp.createServer(function(socket) {
           var dst = that.args[1];
           var keys = that.args.slice(2);
           var result = store.sunion(keys, true);
+          if(result) {
+            store.set(dst, result);
+            reply.number(result.length);
+          } else {
+            reply.ok();
+          }
+        }
+      },
+
+      sdiffstore: {
+        callback: function() {
+          var dst = that.args[1];
+          var keys = that.args.slice(2);
+          var result = store.sdiff(keys, true);
           if(result) {
             store.set(dst, result);
             reply.number(result.length);
