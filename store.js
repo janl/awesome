@@ -372,6 +372,26 @@ exports.sinter = function(keys) {
   return result;
 };
 
+exports.sunion = function(keys) {
+  var union = {};
+  keys.forEach(function(key) {
+    var set = this.get(key);
+    if(!set) {
+      return;
+    }
+    for(var member in set) {
+      union[member] = true;
+    }
+  }, this);
+
+  var result = [];
+  for(var idx in union) {
+    result.push(idx);
+  }
+
+  return result;
+};
+
 exports.srem = function(key, member) {
   var set = this.get(key);
 

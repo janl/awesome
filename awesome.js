@@ -576,6 +576,14 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      sunion: {
+        callback: function() {
+          var keys = that.args.slice(1);
+          var result = store.sunion(keys);
+          reply.multi_bulk(result);
+        }
+      },
+
       // for debugging
       dump: {
         callback: function() {
