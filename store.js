@@ -344,7 +344,7 @@ exports.smembers = function(key) {
   return result;
 };
 
-exports.sinter = function(keys) {
+exports.sinter = function(keys, dont_convert_to_array) {
   do {
     var first_key = keys.shift();
     var tmp = this.get(first_key);
@@ -364,12 +364,16 @@ exports.sinter = function(keys) {
     }
   }, this);
 
-  var result = [];
-  for(var idx in tmp) {
-    result.push(idx);
-  }
+  if(dont_convert_to_array) {
+    return tmp;
+  } else {
+    var result = [];
+    for(var idx in tmp) {
+      result.push(idx);
+    }
 
-  return result;
+    return result;
+  }
 };
 
 exports.sunion = function(keys) {

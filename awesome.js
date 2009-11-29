@@ -48,6 +48,10 @@ var server = tcp.createServer(function(socket) {
       });
     },
 
+    number: function(n) {
+      reply.send(":" + n);
+    },
+
     error: function(s) {
       reply.send("-ERR " + s);
     },
@@ -573,6 +577,20 @@ var server = tcp.createServer(function(socket) {
           var keys = that.args.slice(1);
           var result = store.sinter(keys);
           reply.multi_bulk(result);
+        }
+      },
+
+      sinterstore: {
+        callback: function() {
+          var dst = that.args[1];
+          var keys = that.args.slice(2);
+          var result = store.sinter(keys, true);
+          if(result) {
+            store.set(dst, result);
+            reply.number(result.length);
+          } else {
+            reply.ok();
+          }
         }
       },
 
