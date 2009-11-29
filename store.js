@@ -459,6 +459,27 @@ exports.spop = function(key) {
   }
 };
 
+// sorted sets
+
+exports.zadd = function(key, score, member) {
+  var zset = this.get(key);
+
+  if(!zset) {
+    zset = ZSet();
+  }
+
+  if(!zset.is()) {
+    return false;
+  }
+
+  if(zset.has(member)) {
+    zset.del(member);
+  }
+
+  zset.add(score, member);
+  return true;
+};
+
 exports.type = function(key) {
   if(!this.has(key)) {
     return "none";
@@ -480,6 +501,36 @@ exports.type = function(key) {
 exports.is_array = is_array;
 
 // private
+
+function ZSet() {
+  this.store = {};
+
+  this.add = function(score, member) {
+    this.store[score] = member;
+  };
+
+  this.del = function(member) {
+    for(var idx in this.store) {
+      if(member == store[idx]) {
+        delete store[idx];
+      }
+    }
+  };
+
+  this.has = function(member) {
+    for(var idx in this.store) {
+      if(member == this.store[idx]) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  this.is = function() {
+    return true;
+  };
+  return this;
+}
 
 function keymatch(key, pattern) {
   // shortcut
