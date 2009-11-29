@@ -20,7 +20,7 @@ var server = tcp.createServer(function(socket) {
   var eol = "\r\n";
 
   var EMPTY_VALUE = {};
-  var E_LIST_VALUE = "Operation against a key holding the wrong kind of value";
+  var E_VALUE = "Operation against a key holding the wrong kind of value";
 
   var reply = {
     send: function(s) {
@@ -63,7 +63,7 @@ var server = tcp.createServer(function(socket) {
 
     list: function(value, reply_function) {
       if(value === false) {
-        this.error(E_LIST_VALUE);
+        this.error(E_VALUE);
       } else if(value === null) {
         this.nil();
       } else {
@@ -378,7 +378,7 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           var value = store.llen(key);
           if(value === false) {
-            reply.error(E_LIST_VALUE);
+            reply.error(E_VALUE);
           } else {
             reply.send(":" + value);
           }
@@ -394,7 +394,7 @@ var server = tcp.createServer(function(socket) {
           if(store.lpush(key, value)) {
             reply.ok();
           } else {
-            reply.error(E_LIST_VALUE);
+            reply.error(E_VALUE);
           }
         }
       },
@@ -417,7 +417,7 @@ var server = tcp.createServer(function(socket) {
             if(store.rpush(key, value)) {
               reply.ok();
             } else {
-              reply.error(E_LIST_VALUE);
+              reply.error(E_VALUE);
             }
           }
       },
@@ -441,14 +441,14 @@ var server = tcp.createServer(function(socket) {
           if(value === null) {
             reply.nil();
           } else if(value === false) {
-            reply.error(E_LIST_VALUE);
+            reply.error(E_VALUE);
           } else {
             if(store.lpush(dst, value)) {
               reply.bulk(value);
             } else {
               // restore src
               store.rpush(src, value);
-              reply.error(E_LIST_VALUE);
+              reply.error(E_VALUE);
             }
           }
         }
@@ -481,7 +481,7 @@ var server = tcp.createServer(function(socket) {
           } else if(result === undefined) {
             reply.error("index out of range");
           } else if(result === false) {
-            reply.error(E_LIST_VALUE);
+            reply.error(E_VALUE);
           } else {
             reply.ok();
           }
@@ -497,10 +497,55 @@ var server = tcp.createServer(function(socket) {
           if(status === null) {
             reply.error("no such key");
           } else if(status === false) {
-            reply.error(E_LIST_VALUE);
+            reply.error(E_VALUE);
           } else {
             reply.ok();
           }
+        }
+      },
+
+      sadd: {
+        bulk: true,
+        callback: function() {
+          debug("received SADD command");
+          var key = that.args[1];
+          var member = that.data;
+          var result = store.sadd(key, member);
+          if(result === null) { // the key is already in the set
+            reply.bool(false);
+          } else if (result === false) {
+            reply.error(E_VALUE);
+          } else {
+            reply.bool(true);
+          }
+        }
+      },
+
+      scard: {
+        callback: function() {
+          debug("received SCARD command");
+          var key = that.args[1];
+          var result = store.scard(key);
+          reply.send(":" + result);
+        }
+      },
+
+      sismember: {
+        debug("received SISMEMBER command");
+        bulk: true,
+        callback: function() {
+          var key = that.args[1];
+          var member = that.data;
+          reply.bool(store.sismember(key, member));
+        }
+      },
+
+      smembers: {
+        callback: function() {
+          debug("received SMEMBERS command");
+          var key = that.args[1];
+          var members = store.smembers(key);
+          reply.multi_bulk(members);
         }
       },
 

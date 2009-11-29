@@ -291,6 +291,59 @@ exports.ltrim = function(key, start, end) {
   return value;
 };
 
+exports.sadd = function(key, member) {
+  var set = this.get(key);
+
+  if(!set) {
+    set = {};
+  }
+
+  if(!is_set(set)) {
+    return false;
+  }
+
+  if(set[member]) {
+    return null;
+  }
+
+  set[member] = true;
+  this.set(key, set);
+  return true;
+};
+
+exports.scard = function(key) {
+  if(!this.has(key)) {
+    return 0;
+  }
+
+  var card = 0;
+  for(var idx in this.get(key)) {
+    card++;
+  }
+  return card;
+};
+
+exports.sismember = function(key, member) {
+  if(this.has(key)) {
+    var value = this.get(key);
+    return !!value[member];
+  }
+
+  return false;
+};
+
+exports.smembers = function(key) {
+  var value = this.get(key);
+  if(!value) {
+    value = {};
+  }
+  var result = [];
+  for(var idx in value) {
+    result.push(idx);
+  }
+  return result;
+};
+
 exports.type = function(key) {
   if(!this.has(key)) {
     return "none";
@@ -301,10 +354,9 @@ exports.type = function(key) {
     return "list";
   }
 
-  // TODO
-  // if(this.is_set(value)) {
-  //   return "set";
-  // }
+  if(this.is_set(value)) {
+    return "set";
+  }
 
   return "string";
 };
@@ -335,6 +387,14 @@ function is_array(a) {
   return (a &&
     typeof a === 'object' &&
     a.constructor === Array);
+}
+
+function is_set(s) {
+  if(is_array(s)) {
+    return false;
+  }
+
+  return (s !== null && typeof s === 'object')
 }
 
 function debug(s) {
