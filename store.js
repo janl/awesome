@@ -443,6 +443,21 @@ exports.srem = function(key, member) {
   return false;
 };
 
+exports.spop = function(key) {
+  if(!this.has(key)) {
+    return null;
+  }
+
+  var set = this.get(key);
+  if(!is_set(set)) {
+    return false;
+  }
+
+  for(var member in set) {
+    return member;
+  }
+};
+
 exports.type = function(key) {
   if(!this.has(key)) {
     return "none";

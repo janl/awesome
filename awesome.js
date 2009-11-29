@@ -638,6 +638,14 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      spop: {
+        callback: function() {
+          var key = that.args[1];
+          store.spop(key);
+          reply.send(member);
+        }
+      }
+
       // for debugging
       dump: {
         callback: function() {
