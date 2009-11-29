@@ -434,6 +434,7 @@ var server = tcp.createServer(function(socket) {
       rpoplpush: {
         bulk: true,
         callback: function() {
+          debug("received RPOPLPUSH command");
           var src = that.args[1];
           var dst = that.data;
 
@@ -456,6 +457,7 @@ var server = tcp.createServer(function(socket) {
 
       lrange: {
         callback: function() {
+          debug("received LRANGE command");
           var key = that.args[1];
           var start = that.args[2];
           var end = that.args[3];
@@ -471,6 +473,7 @@ var server = tcp.createServer(function(socket) {
       lset: {
         bulk: true,
         callback: function() {
+          debug("received LSET command");
           var key = that.args[1];
           var index = that.args[2];
           var value = that.data;
@@ -490,6 +493,7 @@ var server = tcp.createServer(function(socket) {
 
       ltrim: {
         callback: function() {
+          debug("received LTRIM command");
           var key = that.args[1];
           var start = that.args[2];
           var end = that.args[3];
