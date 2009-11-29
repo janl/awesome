@@ -366,17 +366,18 @@ exports.sinter = function(keys, dont_convert_to_array) {
 
   if(dont_convert_to_array) {
     return tmp;
-  } else {
-    var result = [];
-    for(var idx in tmp) {
-      result.push(idx);
-    }
-
-    return result;
   }
+
+  var result = [];
+  for(var idx in tmp) {
+    result.push(idx);
+  }
+
+  return result;
+
 };
 
-exports.sunion = function(keys) {
+exports.sunion = function(keys, dont_convert_to_array) {
   var union = {};
   keys.forEach(function(key) {
     var set = this.get(key);
@@ -387,6 +388,10 @@ exports.sunion = function(keys) {
       union[member] = true;
     }
   }, this);
+
+  if(dont_convert_to_array) {
+    return union;
+  }
 
   var result = [];
   for(var idx in union) {

@@ -602,6 +602,20 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      sunionstore: {
+        callback: function() {
+          var dst = that.args[1];
+          var keys = that.args.slice(2);
+          var result = store.sunion(keys, true);
+          if(result) {
+            store.set(dst, result);
+            reply.number(result.length);
+          } else {
+            reply.ok();
+          }
+        }
+      },
+
       // for debugging
       dump: {
         callback: function() {
