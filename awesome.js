@@ -568,6 +568,14 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      sinter: {
+        callback: function() {
+          var keys = that.args.slice(1);
+          var result = store.sinter(keys);
+          reply.multi_bulk(result);
+        }
+      },
+
       // for debugging
       dump: {
         callback: function() {

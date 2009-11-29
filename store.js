@@ -344,6 +344,34 @@ exports.smembers = function(key) {
   return result;
 };
 
+exports.sinter = function(keys) {
+  do {
+    var first_key = keys.shift();
+    var tmp = this.get(first_key);
+  } while(!tmp);
+
+  keys.forEach(function(key) {
+    var set = this.get(key);
+    if(!set) {
+      // empty intersection
+      return [];
+    }
+
+    for(var member in tmp) {
+      if(!set[member]) {
+        delete tmp[member];
+      }
+    }
+  }, this);
+
+  var result = [];
+  for(var idx in tmp) {
+    result.push(idx);
+  }
+
+  return result;
+};
+
 exports.srem = function(key, member) {
   var set = this.get(key);
 
