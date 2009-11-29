@@ -535,9 +535,9 @@ var server = tcp.createServer(function(socket) {
       },
 
       sismember: {
-        debug("received SISMEMBER command");
         bulk: true,
         callback: function() {
+          debug("received SISMEMBER command");
           var key = that.args[1];
           var member = that.data;
           reply.bool(store.sismember(key, member));
@@ -550,6 +550,21 @@ var server = tcp.createServer(function(socket) {
           var key = that.args[1];
           var members = store.smembers(key);
           reply.multi_bulk(members);
+        }
+      },
+
+      srem: {
+        bulk: true,
+        callback: function() {
+          debug("received SREM command");
+          var key = that.args[1];
+          var member = that.data;
+          var result = store.srem(key, member);
+          if(result === null) {
+            reply.error(E_VALUE);
+          } else {
+            reply.bool(result);
+          }
         }
       },
 

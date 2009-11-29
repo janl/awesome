@@ -344,17 +344,32 @@ exports.smembers = function(key) {
   return result;
 };
 
+exports.srem = function(key, member) {
+  var set = this.get(key);
+
+  if(!is_set(set)) {
+    return false;
+  }
+
+  if(set[member]) {
+    delete set[member];
+    return true;
+  }
+
+  return false;
+};
+
 exports.type = function(key) {
   if(!this.has(key)) {
     return "none";
   }
 
   var value = this.get(key);
-  if(this.is_array(value)) {
+  if(is_array(value)) {
     return "list";
   }
 
-  if(this.is_set(value)) {
+  if(is_set(value)) {
     return "set";
   }
 
