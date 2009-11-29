@@ -128,6 +128,13 @@ exports.rename = function(src, dst, do_not_overwrite) {
   this.del(src);
 };
 
+exports.save = function() {
+  var file = require("file");
+  var filename = "dump.jrdb";
+  var data = JSON.stringify(store);
+  file.write(filename, data).wait();
+};
+
 exports.select = function(index) {
   current = index;
   if(!stores[current]) {
@@ -342,6 +349,29 @@ exports.smembers = function(key) {
     result.push(idx);
   }
   return result;
+};
+
+exports.srandmember = function(key) {
+  var set = this.get(key);
+
+  if(!is_set(set)) {
+    return false;
+  }
+
+  var max = this.scard(key) - 1;
+  var random = get_random_int(0, max);
+  var row = 0;
+  for(var idx in set) {
+    if(row == random) {
+      return idx;
+    }
+    row = row + 1;
+  }
+
+  // from https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Global_Objects/Math/random
+  function get_random_int(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
 };
 
 exports.sinter = function(keys, dont_convert_to_array) {

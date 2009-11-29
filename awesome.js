@@ -679,6 +679,18 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      srandmember: {
+        callback: function() {
+          var key = that.args[1];
+          var value = store.srandmember(key);
+          if(key === false) {
+            reply.error(E_VALUE);
+          } else {
+            reply.bulk(value);
+          }
+        }
+      },
+
       // sorted sets
       zadd: {
         bulk: true,
@@ -692,6 +704,14 @@ var server = tcp.createServer(function(socket) {
           } else {
             reply.bool(!!result);
           }
+        }
+      },
+
+      // storage
+      save: {
+        callback: function() {
+          store.save();
+          reply.ok();
         }
       },
 
