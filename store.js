@@ -41,6 +41,10 @@ exports.dump = function() {
   return JSON.stringify(stores);
 };
 
+exports.flushdb = function() {
+  stores.current = [];
+};
+
 exports.get = function(key) {
   return stores[current][key] || null;
 };
@@ -94,7 +98,7 @@ exports.keys = function(pattern) {
       }
     }
   }
-  return result.join(" ");
+  return result;
 };
 
 exports.mget = function(keys) {
@@ -527,10 +531,19 @@ exports.type = function(key) {
   return "string";
 };
 
+exports.sort = function(key, options) {
+  var sorter = require("./sorter");
+  debug("options in store.js: "+ options)
+  sorter.parse(options);
+
+  return sorter.sort(this.get(key));
+};
+
 // TODO: make private again
 exports.is_array = is_array;
 
 // private
+
 
 function ZSet() {
   this.store = {};
@@ -594,6 +607,6 @@ function is_set(s) {
 }
 
 function debug(s) {
-  sys.print(s + "\r\n");
+  sys.puts(s + "\r\n");
 }
 

@@ -148,6 +148,14 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      flushdb: {
+        callback: function() {
+          debug("received FLUSHDB command");
+          store.flushdb();
+          reply.ok();
+        }
+      },
+
       get: {
         callback: function() {
           debug("received GET command");
@@ -264,7 +272,7 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received KEYS command");
           var pattern = that.args[1] || '*';
-          var result = store.keys(pattern);
+          var result = store.keys(pattern).join(" ");
           reply.bulk(result);
         }
       },
@@ -372,6 +380,19 @@ var server = tcp.createServer(function(socket) {
           } else {
             reply.bool(false);
           }
+        }
+      },
+
+      sort: {
+        callback: function() {
+          var key = that.args[1];
+          var options = that.args.slice(2).join(" ");
+          debug("options in awseome.js: " + options);
+          var result = store.sort(key, options);
+          debug("result:");
+          debug(result);
+          debug(typeof result);
+          reply.multi_bulk(result);
         }
       },
 
@@ -786,9 +807,10 @@ var server = tcp.createServer(function(socket) {
         cmd.exec();
       } else {
         // not a bulk request yet
-        debug("not in bulk req yet");
+        debug("not in bulk req (yet)");
         cmd = Command(buffer);
         if(cmd.is_inline()) {
+          debug("is inline command");
           cmd.exec();
         } else {
           if(buffer.indexOf(eol) != buffer.lastIndexOf(eol)) { // two new lines
