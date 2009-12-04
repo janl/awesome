@@ -302,6 +302,18 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      mset: {
+        bulk: true,
+        callback: function() {
+          debug("received MSET command");
+          var msets = this.multi_data;
+          for(var idx in msets) {
+            store.set(idx, msets[idx]);
+          }
+          reply.ok();
+        }
+      },
+
       ping: {
         callback: function() {
           debug("received PING command");
@@ -757,7 +769,23 @@ var server = tcp.createServer(function(socket) {
 
     this.setData = function(data) {
       this.data = data.trim();
-    }
+    },
+
+    this.setMultiBulkData = function(lines) {
+      var result = {};
+      var key = null;
+      for(var idx = 0; idx < lines.length; idx++) {
+        if(idx % 2) { // skip even lines
+          if(!key) {
+            key = lines[idx];
+          } else {
+            result[key] = lines[idx];
+            key = null;
+          }
+        }
+      }
+      this.multi_data = result;
+    },
 
     this.exec = function() {
       debug("in exec '" + this.cmd + "'");
@@ -790,42 +818,80 @@ var server = tcp.createServer(function(socket) {
     return s.substring(start, s.indexOf(eol, start));
   }
 
+  function string_count(haystack, needle) {
+    var regex = new RegExp(needle, "g");
+    var result = haystack.match(regex);
+    if(result) {
+      return result.length - 1;
+    } else {
+      return 0;
+    }
+  }
+
   var buffer = "";
   var in_bulk_request = false;
+  var in_multi_bulk_request = false;
   var cmd = {};
   socket.addListener("receive", function(packet) {
     buffer += packet;
     debug("read: '" + buffer.substr(0, 64) + "'");
-    var idx;
-    while(idx = buffer.indexOf(eol) != -1) { // we have a newline
-      if(in_bulk_request) {
-        debug("in bulk req");
-        // later
-        cmd.setData(buffer);
-        in_bulk_request = false;
-        buffer = adjustBuffer(buffer);
-        cmd.exec();
+    while(buffer.indexOf(eol) != -1) { // we have a newline
+      if(in_multi_bulk_request) {
+        debug("in multi bulk request");
+        // handle multi bulk requests
+        if(!cmd_length) {
+          var cmd_length = cmd.len * 2; // *2 = $len
+        }
+        debug("cmd_length: " + cmd_length);
+        debug("string_count: " + string_count(buffer, eol));
+        if(string_count(buffer, eol) == cmd_length) {
+          var lines = buffer.split(eol);
+          cmd.cmd = lines[2];
+          lines = lines.slice(2); // chop off *len\n$4\nmget
+          cmd.setMultiBulkData(lines)
+          cmd_length++;
+          while(cmd_length--) {
+            buffer = adjustBuffer(buffer);
+          }
+          in_multi_bulk_request = false;
+          cmd.exec();
+          
+        }
       } else {
-        // not a bulk request yet
-        debug("not in bulk req (yet)");
-        cmd = Command(buffer);
-        if(cmd.is_inline()) {
-          debug("is inline command");
+        // handle bulk requests
+        if(in_bulk_request) {
+          debug("in bulk req");
+          cmd.setData(buffer);
+          in_bulk_request = false;
+          buffer = adjustBuffer(buffer);
           cmd.exec();
         } else {
-          if(buffer.indexOf(eol) != buffer.lastIndexOf(eol)) { // two new lines
-            debug("received a bulk command in a single buffer");
-            // parse out command line
-            cmd.setData(parseData(buffer));
-            in_bulk_request = false;
-            buffer = adjustBuffer(buffer);
+          // not a bulk request yet
+          debug("not in bulk req (yet)");
+          cmd = Command(buffer);
+          if(cmd.cmd.charAt(0) == "*") {
+            cmd.len = cmd.cmd.charAt(1);
+            in_multi_bulk_request = true;
+            continue;
+          }
+          if(cmd.is_inline()) {
+            debug("is inline command");
             cmd.exec();
           } else {
-            debug("wait for bulk: '" + buffer + "'");
-            in_bulk_request = true;
+            if(buffer.indexOf(eol) != buffer.lastIndexOf(eol)) { // two new lines
+              debug("received a bulk command in a single buffer");
+              // parse out command line
+              cmd.setData(parseData(buffer));
+              in_bulk_request = false;
+              buffer = adjustBuffer(buffer);
+              cmd.exec();
+            } else {
+              debug("wait for bulk: '" + buffer + "'");
+              in_bulk_request = true;
+            }
           }
+          buffer = adjustBuffer(buffer);
         }
-        buffer = adjustBuffer(buffer);
       }
     }
   });

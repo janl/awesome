@@ -51,14 +51,10 @@ exports.parse = function(opts) {
   };
 };
 
-exports.sort = function(list) {
+exports.sort = function(list, key) {
   debug("pre list" + list);
 
-  debug(options.by);
-  debug(options.get);
   if(!options.by && !options.get) {
-    debug("no fancy crap");
-    debug(options.direction);
     if(!options.direction || options.direction == "ASC") {
       list.sort();
     } else if(options.direction == "DESC"){
@@ -72,7 +68,6 @@ exports.sort = function(list) {
     list.sort();
     return list;
   }
-
 
   if(options.by) {
     var result = [];
@@ -96,6 +91,21 @@ exports.sort = function(list) {
       if(sort_a == sort_b) { return 0;}
       return sort_a < sort_b ? -1 : 1;
     });
+
+    if(options.get) { // substitute value-keys with object values
+      debug("options.get: " + options.get);
+      return list.map(function(elm) {
+        if(options.get == "#") {
+          var index = elm - 1;
+        } else {
+          var index = options.get.replace("\*", elm);
+        }
+        debug("get value for: " + index);
+        debug("value: " + store.lindex(key, index));
+        return store.lindex(key, index);
+      });
+    }
+
     return list;
   }
 }

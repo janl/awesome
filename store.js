@@ -42,7 +42,7 @@ exports.dump = function() {
 };
 
 exports.flushdb = function() {
-  stores.current = [];
+  stores[current] = {};
 };
 
 exports.get = function(key) {
@@ -536,7 +536,7 @@ exports.sort = function(key, options) {
   debug("options in store.js: "+ options)
   sorter.parse(options);
 
-  return sorter.sort(this.get(key));
+  return sorter.sort(this.get(key), key);
 };
 
 // TODO: make private again
