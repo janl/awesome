@@ -5,6 +5,8 @@
 
   MIT License
 */
+Object.prototype.toString = function() { return JSON.stringify(this); };
+
 var store = require("./store");
 var options = {};
 
@@ -73,13 +75,12 @@ exports.sort = function(list, key) {
     var result = [];
     // fetch KYES with by as the pattern,
     // use the result to sort list
-    
     var sort_by_keys = store.keys(options.by);
     function to_hash(values) {
       var result = {};
       for(var idx = 0; idx < sort_by_keys.length; idx++) {
         var key = sort_by_keys[idx].match(/^[^\*]*(.+)$/)[1];
-        result[key] = values[key];
+        result[key] = values[key-1];
       }
       return result;
     }
@@ -93,15 +94,11 @@ exports.sort = function(list, key) {
     });
 
     if(options.get) { // substitute value-keys with object values
-      debug("options.get: " + options.get);
       return list.map(function(elm) {
         if(options.get == "#") {
-          var index = elm - 1;
-        } else {
-          var index = options.get.replace("\*", elm);
+          return elm;
         }
-        debug("get value for: " + index);
-        debug("value: " + store.lindex(key, index));
+        var index = options.get.replace("\*", elm);
         return store.lindex(key, index);
       });
     }

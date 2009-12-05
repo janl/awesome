@@ -306,7 +306,7 @@ var server = tcp.createServer(function(socket) {
         bulk: true,
         callback: function() {
           debug("received MSET command");
-          var msets = this.multi_data;
+          var msets = that.multi_data;
           for(var idx in msets) {
             store.set(idx, msets[idx]);
           }
@@ -772,6 +772,7 @@ var server = tcp.createServer(function(socket) {
     },
 
     this.setMultiBulkData = function(lines) {
+      lines = lines.slice(1);
       var result = {};
       var key = null;
       for(var idx = 0; idx < lines.length; idx++) {
@@ -803,7 +804,7 @@ var server = tcp.createServer(function(socket) {
 
   function debug(s) {
     if(enable_debug && s !== null) {
-      sys.print(s.toString().substr(0,40) + eol);
+      sys.print(s.toString().substr(0,128) + eol);
     }
   }
 
