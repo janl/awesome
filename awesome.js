@@ -24,7 +24,7 @@ var server = tcp.createServer(function(socket) {
 
   var reply = {
     send: function(s) {
-      // debug("reply: '" + s + "'");
+      debug("reply: '" + s || "null" + "'");
       socket.send(s + eol);
     },
 
@@ -42,7 +42,13 @@ var server = tcp.createServer(function(socket) {
     },
 
     multi_bulk: function(values) {
-      reply.send("*" + values.length);
+      var real_length = 0;
+      for(var idx = 0; idx < values.length; idx++) {
+        if(values[idx] !== undefined) {
+          real_length++;
+        }
+      }
+      reply.send("*" + real_length);
       values.forEach(function(value) {
         reply.bulk(value);
       });
@@ -135,7 +141,7 @@ var server = tcp.createServer(function(socket) {
           if(that.args.length > 2) {
             var keys = that.args.slice(1);
             var deleted = store.del(keys);
-            reply.send(":" + deleted);
+            reply.number(deleted);
           } else {
             var key = that.args[1];
             if(store.has(key)) {
@@ -528,7 +534,25 @@ var server = tcp.createServer(function(socket) {
           if(value === null) {
             reply.empty_bulk();
           } else {
+            debug("value: " + value);
             reply.multi_bulk(value);
+          }
+          debug("replied");
+        }
+      },
+
+      lrem: {
+        bulk: true,
+        callback: function() {
+          debug("received LREM comand");
+          var key = that.args[1];
+          var count = parseInt(that.args[2]);
+          var value = that.data;
+          var result = store.lrem(key, count, value);
+          if(result === false) {
+            reply.error(E_VALUE);
+          } else {
+            reply.number(result);
           }
         }
       },

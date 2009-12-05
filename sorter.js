@@ -80,12 +80,11 @@ exports.sort = function(list, key) {
       var result = {};
       for(var idx = 0; idx < sort_by_keys.length; idx++) {
         var key = sort_by_keys[idx].match(/^[^\*]*(.+)$/)[1];
-        result[key] = values[key-1];
+        result[key] = values[idx];
       }
       return result;
     }
     var sort_by = to_hash(store.mget(sort_by_keys));
-
     list.sort(function(a, b) {
       var sort_a = parseInt(sort_by[a]);
       var sort_b = parseInt(sort_by[b]);
@@ -102,7 +101,7 @@ exports.sort = function(list, key) {
         return store.lindex(key, index);
       });
     }
-
+    debug("noby");
     return list;
   }
 }

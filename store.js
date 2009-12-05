@@ -184,7 +184,13 @@ exports.llen = function(key) {
     return false;
   }
 
-  return value.length;
+  var real_length = 0;
+  for(var idx = 0; idx < value.length; idx++) {
+    if(value[idx] !== undefined) {
+      real_length++;
+    }
+  }
+  return real_length;
 }
 
 exports.lpush = function(key, value) {
@@ -272,6 +278,50 @@ exports.lrange = function(key, start, end) {
   }
   var slice =  value.slice(start, end);
   return slice;
+};
+
+exports.lrem = function(key, count, value) {
+  if(!this.has(key)) {
+    return 0;
+  }
+
+  var list = this.get(key);
+  if(!is_array(list)) {
+    return false;
+  }
+
+  count = parseInt(count);
+  var stop_at_count = true;
+  if(count == 0) {
+    stop_at_count = false;
+  }
+
+  var deleted = 0;
+  if(count >= 0) {
+    for(var idx = 0; idx < list.length; idx++) {
+      if(list[idx] == value) {
+        delete list[idx];
+        deleted = deleted + 1;
+        count = count - 1;
+        if(stop_at_count && count == 0) {
+          return deleted;
+        }
+      }
+    }
+  } else { // delete from the back
+    for(var idx = list.length - 1; idx >= 0; idx--) {
+      debug("idx: " + idx);
+      if(list[idx] == value) {
+        delete list[idx];
+        deleted = deleted + 1;
+        count = count + 1;
+        if(stop_at_count && count == 0) {
+          return deleted;
+        }
+      }
+    }
+  }
+  return deleted;
 };
 
 exports.lset = function(key, index, value) {
