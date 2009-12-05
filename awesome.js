@@ -595,6 +595,14 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      randomkey: {
+        callback: function() {
+          debug("received RANDOMKEY command");
+          var value = store.randomkey();
+          reply.status(value);
+        }
+      },
+
       sadd: {
         bulk: true,
         callback: function() {

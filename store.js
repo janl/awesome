@@ -104,7 +104,12 @@ exports.keys = function(pattern) {
 exports.mget = function(keys) {
   var values = [];
   return keys.map(function(key) {
-    return exports.get(key);
+    var value =  exports.get(key);
+    if(is_array(value) || is_set(value)) {
+      return "";
+    }
+
+    return value;
   });
 };
 
@@ -120,6 +125,23 @@ exports.move = function(key, dbindex) {
   var value = this.get(key);
   this.set(key, value, dbindex);
   this.del(key);
+};
+
+exports.randomkey = function() {
+  if(store[current] == {}) {
+    return "";
+  }
+
+  var max = this.dbsize();
+  var stop = get_random_int(0, max);
+  var counter = 0;
+  for(var idx in stores[current]) {
+    if(counter == stop) {
+      return idx;
+    }
+    counter = counter + 1;
+  }
+  return "";
 };
 
 exports.rename = function(src, dst, do_not_overwrite) {
@@ -421,11 +443,6 @@ exports.srandmember = function(key) {
     }
     row = row + 1;
   }
-
-  // from https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Global_Objects/Math/random
-  function get_random_int(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
 };
 
 exports.sinter = function(keys, dont_convert_to_array) {
@@ -623,6 +640,11 @@ function ZSet() {
     return true;
   };
   return this;
+}
+
+// from https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Global_Objects/Math/random
+function get_random_int(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 function keymatch(key, pattern) {
