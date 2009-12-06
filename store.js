@@ -427,6 +427,37 @@ exports.smembers = function(key) {
   return result;
 };
 
+exports.smove = function(src_key, dst_key, member) {
+  var src = this.get(src_key);
+  var dst = this.get(dst_key);
+
+  if(src === null) {
+    return null;
+  }
+
+  if(dst === null) {
+    debug("dst is null, init");
+    dst = {};
+    this.set(dst_key, dst);
+  }
+
+  if(!is_set(src) || !is_set(dst)) {
+    debug("src or dst are not sets, err out");
+    return false;
+  }
+
+  // find member
+  for(var idx in src) {
+    if(idx == member) {
+      dst[idx] = true;
+      delete src[idx];
+      return true;
+    }
+  }
+
+  return null;
+};
+
 exports.srandmember = function(key) {
   var set = this.get(key);
 

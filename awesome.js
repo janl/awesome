@@ -185,12 +185,14 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received GETSET command");
           var key = that.args[1];
-          if(store.has(key)) {
-            var value = store.get(key);
-            reply.send("$" + value.length);
-            reply.send(value);
-          } else { // not found
+          var value = that.data;
+          var old_value = store.get(key);
+          store.set(key, value);
+          if(old_value === null) {
             reply.nil();
+          } else {
+            reply.send("$" + old_value.length);
+            reply.send(old_value);
           }
         }
       },
@@ -313,6 +315,7 @@ var server = tcp.createServer(function(socket) {
         callback: function() {
           debug("received MSET command");
           var msets = that.multi_data;
+          debug("msets: " + msets);
           for(var idx in msets) {
             store.set(idx, msets[idx]);
           }
@@ -648,6 +651,22 @@ var server = tcp.createServer(function(socket) {
         }
       },
 
+      smove: {
+        bulk: true,
+        callback: function() {
+          debug("received SMOVE command");
+          var src = that.args[1];
+          var dst = that.args[2];
+          var member = that.data;
+          var result = store.smove(src, dst, member);
+          if(result === false) {
+            reply.error(E_VALUE);
+          } else {
+            reply.bool(result !== null);
+          }
+        }
+      },
+
       srem: {
         bulk: true,
         callback: function() {
@@ -855,9 +874,9 @@ var server = tcp.createServer(function(socket) {
     var regex = new RegExp(needle, "g");
     var result = haystack.match(regex);
     if(result) {
-      return result.length - 1;
+     return result.length - 1;
     } else {
-      return 0;
+     return 0;
     }
   }
 
@@ -865,31 +884,117 @@ var server = tcp.createServer(function(socket) {
   var in_bulk_request = false;
   var in_multi_bulk_request = false;
   var cmd = {};
+  var cmd_len = false;
   socket.addListener("receive", function(packet) {
     buffer += packet;
-    debug("read: '" + buffer.substr(0, 64) + "'");
+    debug("read: '" + buffer.substr(0, 128) + "'");
     while(buffer.indexOf(eol) != -1) { // we have a newline
       if(in_multi_bulk_request) {
         debug("in multi bulk request");
-        // handle multi bulk requests
-        if(!cmd_length) {
-          var cmd_length = cmd.len * 2; // *2 = $len
+        // find command length
+        if(!cmd_len) {
+          cmd_len = cmd.len; // has been set earlier
+          var cmd_cnt = 0;
+          // match real command
+          debug("buffer: '" + buffer + "'");
+          var match = buffer.match(/\*\d+\r\n\$\d+\r\n([^\r]+)\r\n/);
+          cmd.cmd = match[1];
+          // skip three lines: *len\n$4\nmget
+          buffer = buffer.replace(match[0], "");
         }
-        debug("cmd_length: " + cmd_length);
-        debug("string_count: " + string_count(buffer, eol));
-        if(string_count(buffer, eol) == cmd_length) {
-          var lines = buffer.split(eol);
-          cmd.cmd = lines[2];
-          lines = lines.slice(2); // chop off *len\n$4\nmget
-          cmd.setMultiBulkData(lines)
-          cmd_length++;
-          while(cmd_length--) {
-            buffer = adjustBuffer(buffer);
-          }
-          in_multi_bulk_request = false;
-          cmd.exec();
-          
-        }
+
+        /*
+         $1
+         x
+         $2
+         10
+         $1
+         y
+         $7
+         foo bar
+         $1
+         z
+         $17
+         x x x x x x x
+
+
+
+         '
+         */
+
+         var in_length = false;
+         var in_data = false;
+         var len = "";
+         var line = "";
+         var lines = [];
+         var last_idx = 0;
+         // read commands until length commands were found
+         for(var idx = last_idx; idx < buffer.length && cmd_cnt <= lines.length; idx++) {
+           var chr = buffer[idx];
+           if(chr == "$") {
+             in_length = true;
+             debug("in_lenght, keep reading: ");
+             continue;
+           }
+
+           if(in_length) {
+             if((chr == "\n") && (buffer[idx + 1] == "\r")) {
+               in_length = false;
+               in_data = true;
+               len = parseInt(len);
+               debug("read len: " + len);
+               idx = idx + 1;
+               continue;
+             } else {
+               if(in_length) {
+                 len += chr;
+               }
+             }
+           } else {
+             debug("reading cmd");
+             if((chr == "\n") && (buffer[idx + 1] == "\r") && (line.length <= len)) {
+               in_data = true;
+               lines.push(line);
+               cmd_cnt = cmd_cnt + 1;
+               line = "";
+               last_idx = idx;
+               idx = idx + 1;
+               continue;
+             } else {
+               if(in_data) {
+                 line += chr;
+               }
+             }
+           }
+         }
+         debug("cmd_cnt: " + cmd_cnt);
+         if(cmd_cnt == lines.length) {
+           debug("we're done!");
+           debug("lines: " + lines);
+           // we're done!
+           cmd.bulk_data = lines;
+           // chop commands from buffer
+           buffer = buffer.substring(0, last_idx);
+           // exec commands
+           in_multi_bulk_request = false;
+           cmd_len = false;
+           cmd.exec();
+         }
+
+        // if(!cmd_length) {
+        //   var cmd_length = cmd.len;
+        // }
+        // debug("cmd_length: " + cmd_length);
+        // debug("string_count: " + string_count(buffer, eol));
+        // if(cmd.bulk_data && cmd.bulk_data.length - 1 == cmd_length) {
+        //   var lines = buffer.split(eol);
+        //   cmd.cmd = lines[2];
+        //   lines = lines.slice(3); // chop off *len\n$4\nmget
+        //   cmd.setMultiBulkData(lines.join(eol))
+        //   cmd_length++;
+        //   while(cmd_length--) {
+        //     buffer = adjustBuffer(buffer);
+        //   }
       } else {
         // handle bulk requests
         if(in_bulk_request) {
@@ -903,7 +1008,7 @@ var server = tcp.createServer(function(socket) {
           debug("not in bulk req (yet)");
           cmd = Command(buffer);
           if(cmd.cmd.charAt(0) == "*") {
-            cmd.len = cmd.cmd.charAt(1);
+            cmd.len = parseInt(cmd.cmd.match(/^\*(\d+)$/)[1]);
             in_multi_bulk_request = true;
             continue;
           }
