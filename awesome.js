@@ -25,7 +25,7 @@ var server = tcp.createServer(function(socket) {
   var reply = {
     send: function(s) {
       debug("reply: '" + s || "null" + "'");
-      socket.send(s + eol);
+      socket.write(s + eol);
     },
 
     ok: function() {
@@ -991,7 +991,7 @@ var server = tcp.createServer(function(socket) {
 
   var buffer = "";
   var cmd = null;
-  socket.addListener("receive", function(packet) {
+  socket.addListener("data", function(packet) {
     buffer += packet;
     debug("read: '" + buffer.substr(0, 128) + "'");
 
