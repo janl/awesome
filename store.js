@@ -155,10 +155,10 @@ exports.rename = function(src, dst, do_not_overwrite) {
 };
 
 exports.save = function() {
-  var file = require("file");
+  var fs = require("fs");
   var filename = "dump.jrdb";
   var data = JSON.stringify(store);
-  file.write(filename, data).wait();
+  fs.writeFileSync(filename, data);
 };
 
 exports.select = function(index) {
