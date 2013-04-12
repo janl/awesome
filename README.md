@@ -1,4 +1,4 @@
-# Awesome is a Redis clone in node.js
+# Awesome is a Redis server implementation in node.js
 
 ## WORK IN PROGRESS
 
